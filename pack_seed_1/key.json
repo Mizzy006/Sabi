@@ -1,0 +1,973 @@
+{
+  "seed": 1,
+  "version": "dayone-landed-cost-0.1",
+  "inputs": {
+    "FX_USD_NGN": 1660,
+    "FX_CNY_PER_USD": 7.23,
+    "FREIGHT_USD_PER_KG": 2.7,
+    "CLEARING_PCT": 0.041,
+    "HAULAGE_NGN_PER_UNIT": 410,
+    "TARGET_MARGIN": 0.35,
+    "MIN_MARGIN_FLAG": 0.15,
+    "BUDGET_CAP_NGN": 85580000
+  },
+  "duty": {
+    "Electronics": 0.148,
+    "Home": 0.144,
+    "Apparel": 0.183,
+    "Beauty": 0.136
+  },
+  "sku_order": [
+    "APP-303",
+    "HOM-202",
+    "ELE-103",
+    "ELE-101",
+    "ELE-102",
+    "BTY-403",
+    "APP-301",
+    "BTY-401",
+    "HOM-203",
+    "HOM-201",
+    "APP-302",
+    "BTY-402"
+  ],
+  "clean": [
+    {
+      "sku": "APP-303",
+      "cat": "Apparel",
+      "currency": "USD",
+      "price_quoted": 10.53,
+      "weight_kg": 0.77
+    },
+    {
+      "sku": "HOM-202",
+      "cat": "Home",
+      "currency": "USD",
+      "price_quoted": 11.97,
+      "weight_kg": 2.25
+    },
+    {
+      "sku": "ELE-103",
+      "cat": "Electronics",
+      "currency": "CNY",
+      "price_quoted": 56.68,
+      "weight_kg": 0.3
+    },
+    {
+      "sku": "ELE-101",
+      "cat": "Electronics",
+      "currency": "USD",
+      "price_quoted": 21.22,
+      "weight_kg": 3.51
+    },
+    {
+      "sku": "ELE-102",
+      "cat": "Electronics",
+      "currency": "USD",
+      "price_quoted": 5.26,
+      "weight_kg": 0.45
+    },
+    {
+      "sku": "BTY-403",
+      "cat": "Beauty",
+      "currency": "USD",
+      "price_quoted": 8.91,
+      "weight_kg": 0.59
+    },
+    {
+      "sku": "APP-301",
+      "cat": "Apparel",
+      "currency": "CNY",
+      "price_quoted": 64.78,
+      "weight_kg": 0.53
+    },
+    {
+      "sku": "BTY-401",
+      "cat": "Beauty",
+      "currency": "CNY",
+      "price_quoted": 54.88,
+      "weight_kg": 0.82
+    },
+    {
+      "sku": "HOM-203",
+      "cat": "Home",
+      "currency": "USD",
+      "price_quoted": 15.63,
+      "weight_kg": 3.5
+    },
+    {
+      "sku": "HOM-201",
+      "cat": "Home",
+      "currency": "USD",
+      "price_quoted": 5.81,
+      "weight_kg": 1.01
+    },
+    {
+      "sku": "APP-302",
+      "cat": "Apparel",
+      "currency": "USD",
+      "price_quoted": 7.55,
+      "weight_kg": 0.77
+    },
+    {
+      "sku": "BTY-402",
+      "cat": "Beauty",
+      "currency": "USD",
+      "price_quoted": 9.35,
+      "weight_kg": 0.94
+    }
+  ],
+  "plan": {
+    "APP-303": [
+      160,
+      34100
+    ],
+    "HOM-202": [
+      320,
+      65350
+    ],
+    "ELE-103": [
+      350,
+      25800
+    ],
+    "ELE-101": [
+      390,
+      109850
+    ],
+    "ELE-102": [
+      250,
+      23900
+    ],
+    "BTY-403": [
+      90,
+      26700
+    ],
+    "APP-301": [
+      180,
+      29500
+    ],
+    "BTY-401": [
+      270,
+      26800
+    ],
+    "HOM-203": [
+      150,
+      52200
+    ],
+    "HOM-201": [
+      140,
+      18850
+    ],
+    "APP-302": [
+      190,
+      31650
+    ],
+    "BTY-402": [
+      120,
+      39850
+    ]
+  },
+  "raw": [
+    {
+      "sku": "APP-303",
+      "desc": "Ladies handbag",
+      "cat_raw": "Apparel",
+      "currency": "USD",
+      "price_raw": 10.53,
+      "weight_raw": 770,
+      "unit": "g"
+    },
+    {
+      "sku": "HOM-201",
+      "desc": "Electric kettle 1.8 L",
+      "cat_raw": "HOME ",
+      "currency": "USD",
+      "price_raw": 5.81,
+      "weight_raw": 1.01,
+      "unit": "kg"
+    },
+    {
+      "sku": "APP-302",
+      "desc": "School backpack",
+      "cat_raw": "Apparel",
+      "currency": "USD",
+      "price_raw": 7.55,
+      "weight_raw": 0.77,
+      "unit": "kg"
+    },
+    {
+      "sku": "BTY-402",
+      "desc": "Face cream 50 ml (6-pack)",
+      "cat_raw": "BEAUTY ",
+      "currency": "USD",
+      "price_raw": " 9.35 ",
+      "weight_raw": 940,
+      "unit": "g"
+    },
+    {
+      "sku": "ELE-103",
+      "desc": "Power bank 10,000 mAh",
+      "cat_raw": "ELECTRONICS ",
+      "currency": "CNY",
+      "price_raw": "56.68",
+      "weight_raw": 0.3,
+      "unit": "kg"
+    },
+    {
+      "sku": "BTY-403",
+      "desc": "Hair clipper set",
+      "cat_raw": "Beauty",
+      "currency": "USD",
+      "price_raw": 8.91,
+      "weight_raw": 0.59,
+      "unit": "kg"
+    },
+    {
+      "sku": "APP-302",
+      "desc": "School backpack",
+      "cat_raw": "Apparel",
+      "currency": "USD",
+      "price_raw": 7.55,
+      "weight_raw": 0.77,
+      "unit": "kg"
+    },
+    {
+      "sku": "HOM-203",
+      "desc": "Non-stick pan set",
+      "cat_raw": "Home",
+      "currency": "USD",
+      "price_raw": "15.63",
+      "weight_raw": 3.5,
+      "unit": "kg"
+    },
+    {
+      "sku": "HOM-202",
+      "desc": "Blender 500 W",
+      "cat_raw": "HOME ",
+      "currency": "USD",
+      "price_raw": 11.97,
+      "weight_raw": 2.25,
+      "unit": "kg"
+    },
+    {
+      "sku": "APP-301",
+      "desc": "Men's polo shirt (3-pack)",
+      "cat_raw": "Apparel",
+      "currency": "CNY",
+      "price_raw": 64.78,
+      "weight_raw": 0.53,
+      "unit": "kg"
+    },
+    {
+      "sku": "ELE-101",
+      "desc": "Rechargeable standing fan",
+      "cat_raw": "Electronics",
+      "currency": "USD",
+      "price_raw": "21.22",
+      "weight_raw": 3510,
+      "unit": "g"
+    },
+    {
+      "sku": "BTY-401",
+      "desc": "Hair dryer 1800 W",
+      "cat_raw": "Beauty",
+      "currency": "CNY",
+      "price_raw": "54.88",
+      "weight_raw": 0.82,
+      "unit": "kg"
+    },
+    {
+      "sku": "ELE-102",
+      "desc": "Solar lantern",
+      "cat_raw": "Electronics ",
+      "currency": "USD",
+      "price_raw": 5.26,
+      "weight_raw": 0.45,
+      "unit": "kg"
+    }
+  ],
+  "descriptions": {
+    "ELE-101": "Rechargeable standing fan",
+    "ELE-102": "Solar lantern",
+    "ELE-103": "Power bank 10,000 mAh",
+    "HOM-201": "Electric kettle 1.8 L",
+    "HOM-202": "Blender 500 W",
+    "HOM-203": "Non-stick pan set",
+    "APP-301": "Men's polo shirt (3-pack)",
+    "APP-302": "School backpack",
+    "APP-303": "Ladies handbag",
+    "BTY-401": "Hair dryer 1800 W",
+    "BTY-402": "Face cream 50 ml (6-pack)",
+    "BTY-403": "Hair clipper set"
+  },
+  "base": {
+    "summary": {
+      "total_planned_cost": 76402674.2863621,
+      "within_budget_planned": "Yes",
+      "skus_included": 12,
+      "ordered_cost": 76402674.2863621,
+      "headroom": 9177325.713637903,
+      "blended_margin": 0.3655738342714145,
+      "lowest_margin_sku": "HOM-203",
+      "flagged_count": 2,
+      "duplicate_rows": 1
+    },
+    "table": {
+      "APP-303": {
+        "landed": 26029.470559999998,
+        "margin": 0.23667241759530797,
+        "ordered_qty": 160
+      },
+      "HOM-202": {
+        "landed": 35906.3195,
+        "margin": 0.4505536419280796,
+        "ordered_qty": 320
+      },
+      "ELE-103": {
+        "landed": 17481.977422130014,
+        "margin": 0.32240397588643355,
+        "ordered_qty": 350
+      },
+      "ELE-101": {
+        "landed": 60997.896779999995,
+        "margin": 0.4447164608101958,
+        "ordered_qty": 390
+      },
+      "ELE-102": {
+        "landed": 13189.9665,
+        "margin": 0.44811855648535565,
+        "ordered_qty": 250
+      },
+      "BTY-403": {
+        "landed": 20930.97146,
+        "margin": 0.21606848464419473,
+        "ordered_qty": 90
+      },
+      "APP-301": {
+        "landed": 21522.624616763485,
+        "margin": 0.270419504516492,
+        "ordered_qty": 180
+      },
+      "BTY-401": {
+        "landed": 19566.41330295989,
+        "margin": 0.2699099513820937,
+        "ordered_qty": 270
+      },
+      "HOM-203": {
+        "landed": 49744.868,
+        "margin": 0.04703318007662831,
+        "ordered_qty": 150
+      },
+      "HOM-201": {
+        "landed": 17203.1327,
+        "margin": 0.08736696551724148,
+        "ordered_qty": 140
+      },
+      "APP-302": {
+        "landed": 19974.58736,
+        "margin": 0.3688913946287519,
+        "ordered_qty": 190
+      },
+      "BTY-402": {
+        "landed": 23637.012160000006,
+        "margin": 0.40685038494353815,
+        "ordered_qty": 120
+      }
+    }
+  },
+  "shocks": [
+    {
+      "id": "S1_FX",
+      "label": "FX moves against the naira",
+      "visible": false,
+      "changes": [
+        {
+          "target": "input",
+          "name": "FX_USD_NGN",
+          "cell": "Inputs!B4",
+          "old": 1660,
+          "new": 1990
+        }
+      ],
+      "expected": {
+        "summary": {
+          "total_planned_cost": 91378427.00594011,
+          "within_budget_planned": "No",
+          "skus_included": 11,
+          "ordered_cost": 82445566.70594011,
+          "headroom": 3134433.2940598875,
+          "blended_margin": 0.2677883558683093,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 6,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 31122.497839999996,
+            "margin": 0.08731677888563061,
+            "ordered_qty": 160
+          },
+          "HOM-202": {
+            "landed": 42962.816750000005,
+            "margin": 0.3425735768936495,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 20875.80425905947,
+            "margin": 0.19086030003645463,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 73042.47867,
+            "margin": 0.33507074492489763,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 15730.562249999999,
+            "margin": 0.34181747907949794,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 25010.441690000003,
+            "margin": 0.0632793374531834,
+            "ordered_qty": 90
+          },
+          "APP-301": {
+            "landed": 25719.712642987553,
+            "margin": 0.12814533413601514,
+            "ordered_qty": 180
+          },
+          "BTY-401": {
+            "landed": 23374.615947524202,
+            "margin": 0.1278128377789477,
+            "ordered_qty": 270
+          },
+          "HOM-203": {
+            "landed": 59552.402,
+            "margin": -0.14085061302681995,
+            "ordered_qty": 0
+          },
+          "HOM-201": {
+            "landed": 20541.526550000002,
+            "margin": -0.08973615649867386,
+            "ordered_qty": 140
+          },
+          "APP-302": {
+            "landed": 23863.933039999996,
+            "margin": 0.24600527519747248,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 28254.43024,
+            "margin": 0.29098042057716433,
+            "ordered_qty": 120
+          }
+        }
+      }
+    },
+    {
+      "id": "S2_FREIGHT",
+      "label": "Freight rate surcharge",
+      "visible": false,
+      "changes": [
+        {
+          "target": "input",
+          "name": "FREIGHT_USD_PER_KG",
+          "cell": "Inputs!B6",
+          "old": 2.7,
+          "new": 3.38
+        }
+      ],
+      "expected": {
+        "summary": {
+          "total_planned_cost": 81405068.0914021,
+          "within_budget_planned": "Yes",
+          "skus_included": 12,
+          "ordered_cost": 81405068.0914021,
+          "headroom": 4174931.9085979015,
+          "blended_margin": 0.3240353730743507,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 2,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 27093.341984,
+            "margin": 0.205473842111437,
+            "ordered_qty": 160
+          },
+          "HOM-202": {
+            "landed": 38915.9825,
+            "margin": 0.4044991201224178,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 17884.62038213001,
+            "margin": 0.3067976596073639,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 65708.81941199998,
+            "margin": 0.40183141181611304,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 13793.930939999998,
+            "margin": 0.42284807782426787,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 21714.844044,
+            "margin": 0.18670996089887634,
+            "ordered_qty": 90
+          },
+          "APP-301": {
+            "landed": 22254.899752763482,
+            "margin": 0.24559661855039044,
+            "ordered_qty": 180
+          },
+          "BTY-401": {
+            "landed": 20655.86333495989,
+            "margin": 0.22925883078507875,
+            "ordered_qty": 270
+          },
+          "HOM-203": {
+            "landed": 54426.566000000006,
+            "margin": -0.042654521072797054,
+            "ordered_qty": 150
+          },
+          "HOM-201": {
+            "landed": 18554.13698,
+            "margin": 0.015695650928381998,
+            "ordered_qty": 140
+          },
+          "APP-302": {
+            "landed": 21038.458784,
+            "margin": 0.33527776353870464,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 24885.893904,
+            "margin": 0.3755108179673777,
+            "ordered_qty": 120
+          }
+        }
+      }
+    },
+    {
+      "id": "S3_DUTY",
+      "label": "Duty rate rises on Electronics",
+      "visible": false,
+      "changes": [
+        {
+          "target": "duty",
+          "name": "Electronics",
+          "cell": "Inputs!B14",
+          "old": 0.148,
+          "new": 0.198
+        }
+      ],
+      "expected": {
+        "summary": {
+          "total_planned_cost": 77781962.06882407,
+          "within_budget_planned": "Yes",
+          "skus_included": 12,
+          "ordered_cost": 77781962.06882407,
+          "headroom": 7798037.931175932,
+          "blended_margin": 0.3541206192179222,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 2,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 26029.470559999998,
+            "margin": 0.23667241759530797,
+            "ordered_qty": 160
+          },
+          "HOM-202": {
+            "landed": 35906.3195,
+            "margin": 0.4505536419280796,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 18199.890686307055,
+            "margin": 0.29457788037569554,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 63545.74778,
+            "margin": 0.4215225509330906,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 13727.3915,
+            "margin": 0.4256321548117155,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 20930.97146,
+            "margin": 0.21606848464419473,
+            "ordered_qty": 90
+          },
+          "APP-301": {
+            "landed": 21522.624616763485,
+            "margin": 0.270419504516492,
+            "ordered_qty": 180
+          },
+          "BTY-401": {
+            "landed": 19566.41330295989,
+            "margin": 0.2699099513820937,
+            "ordered_qty": 270
+          },
+          "HOM-203": {
+            "landed": 49744.868,
+            "margin": 0.04703318007662831,
+            "ordered_qty": 150
+          },
+          "HOM-201": {
+            "landed": 17203.1327,
+            "margin": 0.08736696551724148,
+            "ordered_qty": 140
+          },
+          "APP-302": {
+            "landed": 19974.58736,
+            "margin": 0.3688913946287519,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 23637.012160000006,
+            "margin": 0.40685038494353815,
+            "ordered_qty": 120
+          }
+        }
+      }
+    },
+    {
+      "id": "S4_BUDGET",
+      "label": "Budget cap cut",
+      "visible": false,
+      "changes": [
+        {
+          "target": "input",
+          "name": "BUDGET_CAP_NGN",
+          "cell": "Inputs!B11",
+          "old": 85580000,
+          "new": 64180000
+        }
+      ],
+      "expected": {
+        "summary": {
+          "total_planned_cost": 76402674.2863621,
+          "within_budget_planned": "No",
+          "skus_included": 8,
+          "ordered_cost": 60484002.7873621,
+          "headroom": 3695997.2126379013,
+          "blended_margin": 0.4076003644724574,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 2,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 26029.470559999998,
+            "margin": 0.23667241759530797,
+            "ordered_qty": 0
+          },
+          "HOM-202": {
+            "landed": 35906.3195,
+            "margin": 0.4505536419280796,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 17481.977422130014,
+            "margin": 0.32240397588643355,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 60997.896779999995,
+            "margin": 0.4447164608101958,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 13189.9665,
+            "margin": 0.44811855648535565,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 20930.97146,
+            "margin": 0.21606848464419473,
+            "ordered_qty": 0
+          },
+          "APP-301": {
+            "landed": 21522.624616763485,
+            "margin": 0.270419504516492,
+            "ordered_qty": 180
+          },
+          "BTY-401": {
+            "landed": 19566.41330295989,
+            "margin": 0.2699099513820937,
+            "ordered_qty": 270
+          },
+          "HOM-203": {
+            "landed": 49744.868,
+            "margin": 0.04703318007662831,
+            "ordered_qty": 0
+          },
+          "HOM-201": {
+            "landed": 17203.1327,
+            "margin": 0.08736696551724148,
+            "ordered_qty": 0
+          },
+          "APP-302": {
+            "landed": 19974.58736,
+            "margin": 0.3688913946287519,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 23637.012160000006,
+            "margin": 0.40685038494353815,
+            "ordered_qty": 120
+          }
+        }
+      }
+    },
+    {
+      "id": "S5_SHELF",
+      "label": "Competitor cuts the shelf price of ELE-102",
+      "visible": false,
+      "changes": [
+        {
+          "target": "shelf",
+          "name": "ELE-102",
+          "cell": "Order_Plan!C9",
+          "old": 23900,
+          "new": 21500
+        }
+      ],
+      "expected": {
+        "summary": {
+          "total_planned_cost": 76402674.2863621,
+          "within_budget_planned": "Yes",
+          "skus_included": 12,
+          "ordered_cost": 76402674.2863621,
+          "headroom": 9177325.713637903,
+          "blended_margin": 0.3623971501955962,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 2,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 26029.470559999998,
+            "margin": 0.23667241759530797,
+            "ordered_qty": 160
+          },
+          "HOM-202": {
+            "landed": 35906.3195,
+            "margin": 0.4505536419280796,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 17481.977422130014,
+            "margin": 0.32240397588643355,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 60997.896779999995,
+            "margin": 0.4447164608101958,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 13189.9665,
+            "margin": 0.3865131860465116,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 20930.97146,
+            "margin": 0.21606848464419473,
+            "ordered_qty": 90
+          },
+          "APP-301": {
+            "landed": 21522.624616763485,
+            "margin": 0.270419504516492,
+            "ordered_qty": 180
+          },
+          "BTY-401": {
+            "landed": 19566.41330295989,
+            "margin": 0.2699099513820937,
+            "ordered_qty": 270
+          },
+          "HOM-203": {
+            "landed": 49744.868,
+            "margin": 0.04703318007662831,
+            "ordered_qty": 150
+          },
+          "HOM-201": {
+            "landed": 17203.1327,
+            "margin": 0.08736696551724148,
+            "ordered_qty": 140
+          },
+          "APP-302": {
+            "landed": 19974.58736,
+            "margin": 0.3688913946287519,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 23637.012160000006,
+            "margin": 0.40685038494353815,
+            "ordered_qty": 120
+          }
+        }
+      }
+    },
+    {
+      "id": "S6_VISIBLE",
+      "label": "Mid-sprint update: FX move plus budget cut",
+      "visible": true,
+      "changes": [
+        {
+          "target": "input",
+          "name": "FX_USD_NGN",
+          "cell": "Inputs!B4",
+          "old": 1660,
+          "new": 1990
+        },
+        {
+          "target": "input",
+          "name": "BUDGET_CAP_NGN",
+          "cell": "Inputs!B11",
+          "old": 85580000,
+          "new": 64180000
+        }
+      ],
+      "message": "Update from Mrs. Bello: the naira has weakened, so use FX_USD_NGN = 1,990. Finance has also cut the budget cap to 64,180,000 naira. Update the Inputs sheet, check what changes in your model and outputs, and resubmit.",
+      "expected": {
+        "summary": {
+          "total_planned_cost": 91378427.00594011,
+          "within_budget_planned": "No",
+          "skus_included": 6,
+          "ordered_cost": 61398519.00087082,
+          "headroom": 2781480.9991291836,
+          "blended_margin": 0.31439668802207815,
+          "lowest_margin_sku": "HOM-203",
+          "flagged_count": 6,
+          "duplicate_rows": 1
+        },
+        "table": {
+          "APP-303": {
+            "landed": 31122.497839999996,
+            "margin": 0.08731677888563061,
+            "ordered_qty": 0
+          },
+          "HOM-202": {
+            "landed": 42962.816750000005,
+            "margin": 0.3425735768936495,
+            "ordered_qty": 320
+          },
+          "ELE-103": {
+            "landed": 20875.80425905947,
+            "margin": 0.19086030003645463,
+            "ordered_qty": 350
+          },
+          "ELE-101": {
+            "landed": 73042.47867,
+            "margin": 0.33507074492489763,
+            "ordered_qty": 390
+          },
+          "ELE-102": {
+            "landed": 15730.562249999999,
+            "margin": 0.34181747907949794,
+            "ordered_qty": 250
+          },
+          "BTY-403": {
+            "landed": 25010.441690000003,
+            "margin": 0.0632793374531834,
+            "ordered_qty": 0
+          },
+          "APP-301": {
+            "landed": 25719.712642987553,
+            "margin": 0.12814533413601514,
+            "ordered_qty": 0
+          },
+          "BTY-401": {
+            "landed": 23374.615947524202,
+            "margin": 0.1278128377789477,
+            "ordered_qty": 0
+          },
+          "HOM-203": {
+            "landed": 59552.402,
+            "margin": -0.14085061302681995,
+            "ordered_qty": 0
+          },
+          "HOM-201": {
+            "landed": 20541.526550000002,
+            "margin": -0.08973615649867386,
+            "ordered_qty": 0
+          },
+          "APP-302": {
+            "landed": 23863.933039999996,
+            "margin": 0.24600527519747248,
+            "ordered_qty": 190
+          },
+          "BTY-402": {
+            "landed": 28254.43024,
+            "margin": 0.29098042057716433,
+            "ordered_qty": 120
+          }
+        }
+      }
+    }
+  ],
+  "flaws": {
+    "cny": [
+      "ELE-103",
+      "APP-301",
+      "BTY-401"
+    ],
+    "grams": [
+      "APP-303",
+      "ELE-101",
+      "BTY-402"
+    ],
+    "text_price": [
+      "ELE-103",
+      "ELE-101",
+      "BTY-401",
+      "HOM-203",
+      "BTY-402"
+    ],
+    "category_whitespace_or_case": [
+      "HOM-202",
+      "ELE-103",
+      "ELE-102",
+      "HOM-201",
+      "BTY-402"
+    ],
+    "duplicate_sku": "APP-302"
+  },
+  "layout": {
+    "input_cells": {
+      "FX_USD_NGN": "B4",
+      "FX_CNY_PER_USD": "B5",
+      "FREIGHT_USD_PER_KG": "B6",
+      "CLEARING_PCT": "B7",
+      "HAULAGE_NGN_PER_UNIT": "B8",
+      "TARGET_MARGIN": "B9",
+      "MIN_MARGIN_FLAG": "B10",
+      "BUDGET_CAP_NGN": "B11"
+    },
+    "out_summary": {
+      "total_planned_cost": "B4",
+      "within_budget_planned": "B5",
+      "skus_included": "B6",
+      "ordered_cost": "B7",
+      "headroom": "B8",
+      "blended_margin": "B9",
+      "lowest_margin_sku": "B10",
+      "flagged_count": "B11",
+      "duplicate_rows": "B12"
+    },
+    "out_table_first": 16
+  }
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "brief_id": "47f53d996171",
+    "created_at": "2026-11-08T19:17:15.606761Z",
+    "owner_alias": "Mrs. Adebayo",
+    "business_type": "Retail (provisions store)",
+    "consent_given": false,
+    "problem_statement": "need a chart showing my monthly sales trend and which category of goods makes the most money.",
+    "deliverables": [
+      "I need a chart showing my monthly sales trend and which category of goods makes the most money.",
+      "I've been keeping them in exercise books for three years but I want someone to help me put everything into Excel so I can see which products are selling well and which ones are not moving."
+    ],
+    "acceptance_criteria": [
+      "Deliverables match the owner's specifications",
+      "Data has been cleaned and validated",
+      "Analysis is reproducible and documented"
+    ],
+    "data_needed": [
+      "Business data as described by the owner (to be provided after claim)"
+    ],
+    "privacy_risks": [
+      "Contains customer data references",
+      "May contain personal names",
+      "May contain phone numbers",
+      "May contain addresses",
+      "Contains account information"
+    ],
+    "privacy_risk_level": "high",
+    "effort_estimate": "medium",
+    "effort_days": 5,
+    "skill_tags": [
+      "DATA_CLEANING",
+      "EXCEL_FORMULAS",
+      "STAKEHOLDER_COMM",
+      "VIZ_BASIC"
+    ],
+    "pii_found": 6,
+    "pii_categories": [
+      "email",
+      "id_number",
+      "name",
+      "phone"
+    ],
+    "sanitised_transcript": "Good morning, my name is [NAME_REDACTED]. I run a provisions store in Surulere, Lagos. My address is 15 Bode Thomas Street, Surulere. My phone number is [PHONE_REDACTED]D]. I have a problem with my sales records. I've been keeping them in exercise books for three years but I want someone to help me put everything into Excel so I can see which products are selling well and which ones are not moving. I need a chart showing my monthly sales trend and which category of goods makes the most money. I also want to know my best and worst customers. My email is [EMAIL_REDACTED]. The data is in five exercise books, maybe about 2000 entries. I can photograph the pages. I need this done in one week because my accountant [NAME_REDACTED] needs it for tax filing. My BVN is [ID_REDACTED]. Thank you.",
+    "original_transcript": "Good morning, my name is Mrs. Funke Adebayo. I run a provisions store in Surulere, Lagos. My address is 15 Bode Thomas Street, Surulere. My phone number is 08034567890. I have a problem with my sales records. I've been keeping them in exercise books for three years but I want someone to help me put everything into Excel so I can see which products are selling well and which ones are not moving. I need a chart showing my monthly sales trend and which category of goods makes the most money. I also want to know my best and worst customers. My email is funke.adebayo@gmail.com. The data is in five exercise books, maybe about 2000 entries. I can photograph the pages. I need this done in one week because my accountant Mr. Chukwuma Obi needs it for tax filing. My BVN is 22345678901. Thank you.",
+    "status": "draft",
+    "claimed_by": null,
+    "mentor_review": null,
+    "owner_reference": null
+  },
+  {
+    "brief_id": "503fb5bec451",
+    "created_at": "2026-11-08T19:17:15.607609Z",
+    "owner_alias": "Alhaji Musa",
+    "business_type": "Logistics (haulage company)",
+    "consent_given": false,
+    "problem_statement": "need help with tracking my fuel costs and maintenance expenses.",
+    "deliverables": [
+      "I need help with tracking my fuel costs and maintenance expenses.",
+      "I want a spreadsheet that shows cost per trip, cost per kilometre, and which trucks are eating too much fuel or need maintenance.",
+      "Everything is in my driver's reports and fuel receipts but nobody organises them."
+    ],
+    "acceptance_criteria": [
+      "Deliverables match the owner's specifications",
+      "Data has been cleaned and validated",
+      "Analysis is reproducible and documented"
+    ],
+    "data_needed": [
+      "Business data as described by the owner (to be provided after claim)"
+    ],
+    "privacy_risks": [
+      "Contains customer data references",
+      "May contain personal names",
+      "May contain phone numbers"
+    ],
+    "privacy_risk_level": "high",
+    "effort_estimate": "medium",
+    "effort_days": 5,
+    "skill_tags": [
+      "EXCEL_FORMULAS",
+      "EXCEL_MODELLING",
+      "REPORT_WRITING",
+      "STAKEHOLDER_COMM"
+    ],
+    "pii_found": 8,
+    "pii_categories": [
+      "id_number",
+      "name",
+      "phone"
+    ],
+    "sanitised_transcript": "This is [NAME_REDACTED], I own a haulage company based in Kano. We transport goods from Apapa port to the North, about 15 trucks. I need help with tracking my fuel costs and maintenance expenses. Everything is in my driver's reports and fuel receipts but nobody organises them. I want a spreadsheet that shows cost per trip, cost per kilometre, and which trucks are eating too much fuel or need maintenance. I also want to compare what we charge customers versus what each trip actually costs us. Some trips we are losing money and I don't know which ones. My phone is [PHONE_REDACTED]D], office line is [PHONE_REDACTED]D]. Contact my operations manager [NAME_REDACTED] at [PHONE_REDACTED]D] if I'm not available. We have records for the last 6 months.",
+    "original_transcript": "This is Alhaji Ibrahim Musa, I own a haulage company based in Kano. We transport goods from Apapa port to the North, about 15 trucks. I need help with tracking my fuel costs and maintenance expenses. Everything is in my driver's reports and fuel receipts but nobody organises them. I want a spreadsheet that shows cost per trip, cost per kilometre, and which trucks are eating too much fuel or need maintenance. I also want to compare what we charge customers versus what each trip actually costs us. Some trips we are losing money and I don't know which ones. My phone is 09012345678, office line is 08098765432. Contact my operations manager Chief Bala Abdullahi at 07065432109 if I'm not available. We have records for the last 6 months.",
+    "status": "draft",
+    "claimed_by": null,
+    "mentor_review": null,
+    "owner_reference": null
+  }
+]

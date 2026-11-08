@@ -1,0 +1,137 @@
+{
+  "A_reference": {
+    "scores": {
+      "typed_numbers": 0,
+      "magic_constants": 0,
+      "constant_formulas": 0,
+      "unused_inputs": 0,
+      "ai_declared": null,
+      "notes_present": false,
+      "shocks_total": 6,
+      "shocks_responsive": 6,
+      "shocks_matching_key": 6,
+      "base_matches_key": true,
+      "constraint_ok": true
+    },
+    "top_findings": [
+      "DECLARATION Brief!B11",
+      "DECLARATION Brief!B12"
+    ],
+    "defence_questions": []
+  },
+  "B_pasted_values": {
+    "scores": {
+      "typed_numbers": 55,
+      "magic_constants": 0,
+      "constant_formulas": 0,
+      "unused_inputs": 0,
+      "ai_declared": null,
+      "notes_present": false,
+      "shocks_total": 6,
+      "shocks_responsive": 0,
+      "shocks_matching_key": 0,
+      "base_matches_key": true,
+      "constraint_ok": false
+    },
+    "top_findings": [
+      "CONSTRAINT S4_BUDGET",
+      "CONSTRAINT S6_VISIBLE",
+      "NO_RESPONSE S1_FX",
+      "NO_RESPONSE S2_FREIGHT",
+      "NO_RESPONSE S6_VISIBLE",
+      "TYPED_NUMBER Model!N6"
+    ],
+    "defence_questions": [
+      {
+        "finding": "CONSTRAINT",
+        "where": "S4_BUDGET",
+        "question": "After the shock 'S4_BUDGET', your model breaks the budget rule (ordered cost 76,402,674 against cap 64,180,000). Walk me through how your order rule decides which SKUs to leave out."
+      },
+      {
+        "finding": "NO_RESPONSE",
+        "where": "S1_FX",
+        "question": "After the shock 'S1_FX', your outputs barely moved (0 of 12 landed costs moved; allowed ratio 1 to 1.199). Which cells carry that input through your model?"
+      },
+      {
+        "finding": "TYPED_NUMBER",
+        "where": "Model!N6",
+        "question": "Model!N6 holds a typed number (26029.47). What does it represent, and why is it not a formula?"
+      }
+    ]
+  },
+  "C_magic_constants": {
+    "scores": {
+      "typed_numbers": 0,
+      "magic_constants": 36,
+      "constant_formulas": 0,
+      "unused_inputs": 2,
+      "ai_declared": null,
+      "notes_present": false,
+      "shocks_total": 6,
+      "shocks_responsive": 4,
+      "shocks_matching_key": 4,
+      "base_matches_key": true,
+      "constraint_ok": true
+    },
+    "top_findings": [
+      "NO_RESPONSE S1_FX",
+      "NO_RESPONSE S6_VISIBLE",
+      "MAGIC_CONSTANT Model!G6",
+      "MAGIC_CONSTANT Model!H6",
+      "MAGIC_CONSTANT Model!O6",
+      "MAGIC_CONSTANT Model!G7"
+    ],
+    "defence_questions": [
+      {
+        "finding": "NO_RESPONSE",
+        "where": "S1_FX",
+        "question": "After the shock 'S1_FX', your outputs barely moved (0 of 12 landed costs moved; allowed ratio 1 to 1.199). Which cells carry that input through your model?"
+      },
+      {
+        "finding": "MAGIC_CONSTANT",
+        "where": "Model!G6",
+        "question": "The formula in Model!G6 contains the literal 1660. Where does it come from, and what happens when that value changes?"
+      },
+      {
+        "finding": "INPUT_UNUSED",
+        "where": "Inputs!B4",
+        "question": "The input 'FX_USD_NGN' feeds no formula. Is that deliberate?"
+      }
+    ]
+  },
+  "D_typed_order_flags": {
+    "scores": {
+      "typed_numbers": 12,
+      "magic_constants": 0,
+      "constant_formulas": 0,
+      "unused_inputs": 0,
+      "ai_declared": null,
+      "notes_present": false,
+      "shocks_total": 6,
+      "shocks_responsive": 4,
+      "shocks_matching_key": 3,
+      "base_matches_key": true,
+      "constraint_ok": false
+    },
+    "top_findings": [
+      "CONSTRAINT S4_BUDGET",
+      "CONSTRAINT S6_VISIBLE",
+      "TYPED_NUMBER Model!W6",
+      "TYPED_NUMBER Model!W7",
+      "TYPED_NUMBER Model!W8",
+      "TYPED_NUMBER Model!W9"
+    ],
+    "defence_questions": [
+      {
+        "finding": "CONSTRAINT",
+        "where": "S4_BUDGET",
+        "question": "After the shock 'S4_BUDGET', your model breaks the budget rule (ordered cost 76,402,674 against cap 64,180,000). Walk me through how your order rule decides which SKUs to leave out."
+      },
+      {
+        "finding": "TYPED_NUMBER",
+        "where": "Model!W6",
+        "question": "Model!W6 holds a typed number (1). What does it represent, and why is it not a formula?"
+      }
+    ]
+  }
+}

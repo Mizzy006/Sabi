@@ -1,0 +1,280 @@
+{
+  "taxonomy_size": 29,
+  "postings_count": 50,
+  "department": "Economics",
+  "gaps": [
+    {
+      "skill_id": "DATA_CLEANING",
+      "skill_name": "Data cleaning & wrangling",
+      "category": "Technical",
+      "employer_demand": 0.82,
+      "required_demand": 0.82,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.82
+    },
+    {
+      "skill_id": "STAKEHOLDER_COMM",
+      "skill_name": "Stakeholder communication",
+      "category": "Communication",
+      "employer_demand": 0.82,
+      "required_demand": 0.82,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.82
+    },
+    {
+      "skill_id": "TEAMWORK",
+      "skill_name": "Teamwork & collaboration",
+      "category": "Soft",
+      "employer_demand": 0.8,
+      "required_demand": 0.8,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.8
+    },
+    {
+      "skill_id": "VIZ_BASIC",
+      "skill_name": "Data visualisation basics",
+      "category": "Technical",
+      "employer_demand": 0.7,
+      "required_demand": 0.7,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.7
+    },
+    {
+      "skill_id": "TIME_MANAGEMENT",
+      "skill_name": "Time & priority management",
+      "category": "Soft",
+      "employer_demand": 0.7,
+      "required_demand": 0.7,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.7
+    },
+    {
+      "skill_id": "ATTENTION_DETAIL",
+      "skill_name": "Attention to detail",
+      "category": "Soft",
+      "employer_demand": 0.68,
+      "required_demand": 0.68,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.68
+    },
+    {
+      "skill_id": "SQL_BASIC",
+      "skill_name": "SQL fundamentals",
+      "category": "Technical",
+      "employer_demand": 0.66,
+      "required_demand": 0.66,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.66
+    },
+    {
+      "skill_id": "EXCEL_FORMULAS",
+      "skill_name": "Excel formulas & functions",
+      "category": "Technical",
+      "employer_demand": 0.82,
+      "required_demand": 0.82,
+      "curriculum_coverage": 0.2,
+      "gap_score": 0.62
+    },
+    {
+      "skill_id": "ADAPTABILITY",
+      "skill_name": "Adaptability under pressure",
+      "category": "Soft",
+      "employer_demand": 0.6,
+      "required_demand": 0.6,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.6
+    },
+    {
+      "skill_id": "EXCEL_PIVOT",
+      "skill_name": "Pivot tables & charts",
+      "category": "Technical",
+      "employer_demand": 0.56,
+      "required_demand": 0.56,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.56
+    },
+    {
+      "skill_id": "PYTHON_BASIC",
+      "skill_name": "Python fundamentals",
+      "category": "Technical",
+      "employer_demand": 0.36,
+      "required_demand": 0.36,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.36
+    },
+    {
+      "skill_id": "POWERBI",
+      "skill_name": "Power BI / Tableau basics",
+      "category": "Technical",
+      "employer_demand": 0.23,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.23
+    },
+    {
+      "skill_id": "INITIATIVE",
+      "skill_name": "Initiative & self-direction",
+      "category": "Soft",
+      "employer_demand": 0.18,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.18
+    },
+    {
+      "skill_id": "PANDAS_BASIC",
+      "skill_name": "Pandas for data analysis",
+      "category": "Technical",
+      "employer_demand": 0.15,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.15
+    },
+    {
+      "skill_id": "SQL_JOINS",
+      "skill_name": "SQL joins & subqueries",
+      "category": "Technical",
+      "employer_demand": 0.14,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.14
+    },
+    {
+      "skill_id": "SQL_AGGREGATION",
+      "skill_name": "SQL aggregation & window fn",
+      "category": "Technical",
+      "employer_demand": 0.14,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.14
+    },
+    {
+      "skill_id": "EXCEL_MODELLING",
+      "skill_name": "Financial modelling in Excel",
+      "category": "Technical",
+      "employer_demand": 0.13,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.13
+    },
+    {
+      "skill_id": "ASSUMPTION_MGMT",
+      "skill_name": "Assumption management",
+      "category": "Analytical",
+      "employer_demand": 0.07,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.07
+    },
+    {
+      "skill_id": "REPORT_WRITING",
+      "skill_name": "Report & memo writing",
+      "category": "Communication",
+      "employer_demand": 0.46,
+      "required_demand": 0.46,
+      "curriculum_coverage": 0.4,
+      "gap_score": 0.06
+    },
+    {
+      "skill_id": "PROBLEM_FRAMING",
+      "skill_name": "Problem framing & scoping",
+      "category": "Analytical",
+      "employer_demand": 0.44,
+      "required_demand": 0.44,
+      "curriculum_coverage": 0.4,
+      "gap_score": 0.04
+    },
+    {
+      "skill_id": "GOOGLE_SHEETS",
+      "skill_name": "Google Sheets / Apps Script",
+      "category": "Technical",
+      "employer_demand": 0.03,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.03
+    },
+    {
+      "skill_id": "AI_VERIFICATION",
+      "skill_name": "AI output verification",
+      "category": "Analytical",
+      "employer_demand": 0.03,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.03
+    },
+    {
+      "skill_id": "CRITICAL_THINKING",
+      "skill_name": "Critical thinking",
+      "category": "Analytical",
+      "employer_demand": 0.42,
+      "required_demand": 0.42,
+      "curriculum_coverage": 0.4,
+      "gap_score": 0.02
+    },
+    {
+      "skill_id": "STATS_DESCRIPTIVE",
+      "skill_name": "Descriptive statistics",
+      "category": "Technical",
+      "employer_demand": 0.4,
+      "required_demand": 0.4,
+      "curriculum_coverage": 0.4,
+      "gap_score": 0.0
+    },
+    {
+      "skill_id": "ERROR_DETECTION",
+      "skill_name": "Error detection in data",
+      "category": "Analytical",
+      "employer_demand": 0.0,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.0,
+      "gap_score": 0.0
+    },
+    {
+      "skill_id": "PRESENTATION",
+      "skill_name": "Presenting findings",
+      "category": "Communication",
+      "employer_demand": 0.16,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.2,
+      "gap_score": -0.04
+    },
+    {
+      "skill_id": "CAUSAL_REASONING",
+      "skill_name": "Causal vs correlational",
+      "category": "Analytical",
+      "employer_demand": 0.11,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.2,
+      "gap_score": -0.09
+    },
+    {
+      "skill_id": "EXCEL_BASIC",
+      "skill_name": "Excel fundamentals",
+      "category": "Technical",
+      "employer_demand": 0.0,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.2,
+      "gap_score": -0.2
+    },
+    {
+      "skill_id": "STATS_INFERENCE",
+      "skill_name": "Inferential statistics",
+      "category": "Technical",
+      "employer_demand": 0.1,
+      "required_demand": 0.0,
+      "curriculum_coverage": 0.6,
+      "gap_score": -0.5
+    }
+  ],
+  "funnels": [
+    {
+      "department": "Economics",
+      "total_skills": 29,
+      "taught": 9,
+      "practiced": 1,
+      "proven": 0,
+      "taught_pct": 0.31,
+      "practiced_pct": 0.034,
+      "proven_pct": 0.0
+    }
+  ]
+}

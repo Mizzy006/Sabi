@@ -1,0 +1,40 @@
+{
+  "student_id": "demo_student",
+  "scenario_seed": 1,
+  "workbook_path": "C:\\Users\\USER\\Desktop\\Sabi\\dayone_landed_cost_reference_seed1.xlsx",
+  "questions": [
+    {
+      "index": 1,
+      "finding_code": "DEMO",
+      "cell_or_location": "Model!N6",
+      "question_text": "Walk me through how cell N6 computes the landed cost for the first SKU.",
+      "persona_question": "Ah-ah, tell me something. Walk me through how cell N6 computes the landed cost for the first SKU.\n\nRespond as JSON: {\"persona_question\": \"...\"}"
+    }
+  ],
+  "responses": [
+    {
+      "question_index": 1,
+      "student_answer": "The FX rate of 1660 is in the formula because I typed it directly. I know it should reference Inputs!B4 which has FX_USD_NGN. If FX changes, my formula won't update — I should fix that.",
+      "claims_detected": [
+        "N6 depends on N6",
+        "I included freight, duty, clearing, haulage, cif, fob, landed"
+      ],
+      "claims_verified": [
+        {
+          "claim": "N6 depends on N6",
+          "verified": false,
+          "evidence": "Model!N6 is NOT in the dependency chain of Model!N6"
+        },
+        {
+          "claim": "I included freight, duty, clearing, haulage, cif, fob, landed",
+          "verified": true,
+          "evidence": "Model!N6 depends on named range FREIGHT_USD_PER_KG (resolves to ['Inputs!B6'])"
+        }
+      ],
+      "classification": "could_not_explain"
+    }
+  ],
+  "overall_outcome": "failed",
+  "understanding_gate_passed": false,
+  "recommended_level": "Emerging"
+}

@@ -1,0 +1,47 @@
+{
+  "brief_id": "a7a59d5e49ab",
+  "candidate_alias": "CANDIDATE-DEMO-001",
+  "candidate_name": "Ada Okafor",
+  "candidate_school": "University of Lagos",
+  "candidate_gender": "Female",
+  "target_role": "Graduate Supply-Chain Analyst",
+  "skills": [
+    {
+      "skill_id": "LC-MODEL-01",
+      "skill_name": "Landed-Cost Modelling",
+      "level": "Working",
+      "tier": "A",
+      "evidence_summary": "Scenario auto-check: 6/6 shocks responsive, base matches key, constraints OK, defence passed."
+    },
+    {
+      "skill_id": "EXCEL-STRUCT-01",
+      "skill_name": "Spreadsheet Structure & Hygiene",
+      "level": "Working",
+      "tier": "A",
+      "evidence_summary": "Typed numbers: 0, magic constants: 0, constant formulas: 0, unused inputs: 0."
+    }
+  ],
+  "signals": {
+    "shocks_survived": [
+      6,
+      6
+    ],
+    "typed_numbers_found": 0,
+    "magic_constants_found": 0,
+    "base_matches_key": true,
+    "constraint_compliance": true,
+    "defence_outcome": "passed",
+    "understanding_gate": true,
+    "ai_tools_declared": null,
+    "assumptions_documented": false
+  },
+  "attestations": [],
+  "scenario_name": "Day One Landed-Cost",
+  "scenario_version": "0.1",
+  "instance_seed_hash": "6b86b273ff34fce1",
+  "created_at": "2026-11-08T12:21:12.481777Z",
+  "sha256_digest": "d5ae9d124366b503e5c2c2a141c3f2102ebeecc2e24e2321ffb09796a86eb986",
+  "verification_url": "/verify/a7a59d5e49ab",
+  "qr_code_path": "C:\\Users\\USER\\Desktop\\Sabi\\evidence_brief_demo\\qr_a7a59d5e49ab.png",
+  "limitations_note": "This brief records performance on a single, time-boxed scenario. It does NOT claim the candidate can handle every variant of this problem, nor does it measure soft skills, domain expertise beyond the scenario scope, or long-term job performance. Tier A evidence is auto-verified and capped at 'Working'; 'Strong' always requires independent human review (Tier B+). The system raises the cost of faking until honest practice is the cheapest route — it does not claim to be unfakeable."
+}
