@@ -2,21 +2,26 @@
 """Sabi unified API server (FastAPI).
 
 Ties together: Day One pack generation, autopsy, targeted defence,
-evidence brief signing/verification, planner solver, and radar analytics.
+evidence brief signing/verification, planner solver, radar analytics,
+and SME voice-note brief extraction.
 
 Run:
     python sabi_server.py                     # default: http://localhost:8000
     uvicorn sabi_server:app --reload --port 8000
 
 Endpoints:
-    POST /api/dayone/pack/generate     — generate a new starter pack
-    POST /api/dayone/submit            — upload .xlsx, run autopsy
-    POST /api/dayone/defence/start     — start a defence session
-    POST /api/dayone/defence/answer    — submit a defence answer
-    GET  /verify/{brief_id}            — public verification page
-    POST /api/planner/solve            — run constraint-optimised plan
-    GET  /api/radar/heatmap            — curriculum gap analysis
-    GET  /                             — landing page
+    GET  /                             — Interactive multi-portal dashboard SPA
+    GET  /verify/{brief_id}            — Public tamper-evident verification page
+    POST /api/dayone/pack/generate     — Generate a new starter pack
+    GET  /api/dayone/pack/{seed}/download — Download the starter pack (.xlsx)
+    POST /api/dayone/submit            — Upload .xlsx, run autopsy
+    POST /api/dayone/submit/demo       — Run autopsy on reference pack
+    POST /api/dayone/defence/start     — Start Mrs. Bello defence session
+    POST /api/dayone/defence/answer    — Submit a defence answer
+    POST /api/planner/solve            — Run constraint-optimised plan (PuLP)
+    GET  /api/radar/heatmap            — Curriculum gap analysis & funnels
+    POST /api/sme/process              — Sanitise PII & extract structured brief
+    GET  /api/candidates               — List candidate briefs (blind or full)
 """
 from __future__ import annotations
 
@@ -28,8 +33,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 # Local imports
@@ -42,6 +49,7 @@ from sabi_radar import (
     generate_sample_postings, SAMPLE_COURSES, analyse_gaps,
     compute_funnel, SKILLS_TAXONOMY, format_heatmap,
 )
+from sabi_sme import process_voice_note, SMEBrief
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -56,12 +64,76 @@ app = FastAPI(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PACKS_DIR = os.path.join(BASE_DIR, "packs")
 BRIEFS_DIR = os.path.join(BASE_DIR, "briefs")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+
 os.makedirs(PACKS_DIR, exist_ok=True)
 os.makedirs(BRIEFS_DIR, exist_ok=True)
+os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
-# In-memory stores (SQLite/Postgres in production)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+# In-memory stores
 _briefs: dict[str, EvidenceBrief] = {}
 _defence_sessions: dict[str, dict] = {}
+
+
+def _ensure_initial_candidates():
+    """Populate candidate pool with verified demo briefs."""
+    # Check BRIEFS_DIR
+    if os.path.isdir(BRIEFS_DIR):
+        for fname in os.listdir(BRIEFS_DIR):
+            if fname.endswith(".json"):
+                try:
+                    fpath = os.path.join(BRIEFS_DIR, fname)
+                    with open(fpath, encoding="utf-8") as f:
+                        data = json.load(f)
+                        b = EvidenceBrief(**data)
+                        _briefs[b.brief_id] = b
+                except Exception:
+                    pass
+
+    # Check evidence_brief_demo directory
+    demo_json = os.path.join(BASE_DIR, "evidence_brief_demo", "evidence_brief.json")
+    if os.path.isfile(demo_json):
+        try:
+            with open(demo_json, encoding="utf-8") as f:
+                data = json.load(f)
+                b = EvidenceBrief(**data)
+                _briefs[b.brief_id] = b
+        except Exception:
+            pass
+
+    # Create additional demo candidate if pool is small
+    if len(_briefs) < 2:
+        scores = {
+            "shocks_total": 6, "shocks_responsive": 6,
+            "base_matches_key": True, "constraint_ok": True,
+            "typed_numbers": 0, "magic_constants": 0,
+            "constant_formulas": 0, "unused_inputs": 0,
+            "ai_declared": None, "notes_present": True,
+        }
+        defence = {"outcome": "passed", "understanding_gate": True}
+        cand2 = {
+            "alias": "CANDIDATE-DEMO-002",
+            "name": "Chidi Nnamani",
+            "school": "University of Nigeria, Nsukka",
+            "gender": "Male",
+            "target_role": "Junior Financial Analyst",
+        }
+        scen2 = {"name": "Day One Landed-Cost", "version": "0.1", "seed": 42}
+        b2 = build_brief(scores, defence, cand2, scen2)
+        _briefs[b2.brief_id] = b2
+        try:
+            with open(os.path.join(BRIEFS_DIR, f"{b2.brief_id}.json"), "w", encoding="utf-8") as f:
+                f.write(b2.model_dump_json(indent=2))
+        except Exception:
+            pass
+
+
+_ensure_initial_candidates()
 
 
 # ---------------------------------------------------------------------------
@@ -107,9 +179,24 @@ class RadarRequest(BaseModel):
     n_postings: int = 50
     seed: int = 42
 
+class SMEProcessRequest(BaseModel):
+    text: str
+    owner_alias: str = "SME_OWNER"
+    business_type: str = "Small business"
+
 
 # ---------------------------------------------------------------------------
-# 1. Day One Pack Generation
+# 0. Landing Page SPA
+# ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse)
+def landing(request: Request):
+    """Serve the interactive Sabi single-page application."""
+    return templates.TemplateResponse(request=request, name="index.html")
+
+
+# ---------------------------------------------------------------------------
+# 1. Day One Pack Generation & Download
 # ---------------------------------------------------------------------------
 
 @app.post("/api/dayone/pack/generate", response_model=PackGenerateResponse)
@@ -130,8 +217,33 @@ def generate_pack(req: PackGenerateRequest):
         raise HTTPException(500, detail=f"Pack generation failed: {e}")
 
 
+@app.get("/api/dayone/pack/{seed}/download")
+def download_starter_pack(seed: int = 1):
+    """Download the starter .xlsx workbook for a given seed."""
+    pack_dir = os.path.join(PACKS_DIR, f"pack_seed_{seed}")
+    if not os.path.isdir(pack_dir):
+        fallback = os.path.join(BASE_DIR, f"pack_seed_{seed}")
+        if os.path.isdir(fallback):
+            pack_dir = fallback
+
+    starter_path = os.path.join(pack_dir, "starter.xlsx")
+    if not os.path.isfile(starter_path):
+        from dayone_generator import write_pack
+        os.makedirs(pack_dir, exist_ok=True)
+        write_pack(seed, pack_dir)
+
+    if not os.path.isfile(starter_path):
+        raise HTTPException(404, detail="Starter pack file could not be found or generated.")
+
+    return FileResponse(
+        starter_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"sabi_starter_pack_seed{seed}.xlsx",
+    )
+
+
 # ---------------------------------------------------------------------------
-# 2. Day One Autopsy (submission)
+# 2. Day One Autopsy (submission & demo)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/dayone/submit")
@@ -144,11 +256,15 @@ async def submit_workbook(
         raise HTTPException(400, detail="Only .xlsx files are accepted (no macros).")
 
     pack_dir = os.path.join(PACKS_DIR, f"pack_seed_{seed}")
+    if not os.path.isdir(pack_dir):
+        fallback = os.path.join(BASE_DIR, f"pack_seed_{seed}")
+        if os.path.isdir(fallback):
+            pack_dir = fallback
+
     key_path = os.path.join(pack_dir, "key.json")
     if not os.path.isfile(key_path):
         raise HTTPException(404, detail=f"Pack for seed {seed} not found. Generate it first.")
 
-    # Save upload to temp
     tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
     try:
         content = await file.read()
@@ -163,6 +279,7 @@ async def submit_workbook(
             "status": "success",
             "scores": scores,
             "findings_count": len(report["findings"]),
+            "findings": report["findings"],
             "defence_questions": report["defence_questions"],
             "shocks_responsive": scores["shocks_responsive"],
             "shocks_total": scores["shocks_total"],
@@ -171,7 +288,44 @@ async def submit_workbook(
     except Exception as e:
         raise HTTPException(500, detail=f"Autopsy failed: {e}")
     finally:
-        os.unlink(tmp.name)
+        if os.path.exists(tmp.name):
+            try:
+                os.unlink(tmp.name)
+            except Exception:
+                pass
+
+
+@app.post("/api/dayone/submit/demo")
+def submit_demo(seed: int = 1):
+    """Run autopsy on reference pack directly for interactive demonstrations."""
+    pack_dir = os.path.join(PACKS_DIR, f"pack_seed_{seed}")
+    if not os.path.isdir(pack_dir):
+        fallback = os.path.join(BASE_DIR, f"pack_seed_{seed}")
+        if os.path.isdir(fallback):
+            pack_dir = fallback
+
+    ref_path = os.path.join(pack_dir, "reference.xlsx")
+    if not os.path.isfile(ref_path):
+        from dayone_generator import write_pack
+        os.makedirs(pack_dir, exist_ok=True)
+        write_pack(seed, pack_dir)
+
+    try:
+        from dayone_autopsy import autopsy
+        report = autopsy(ref_path, pack_dir)
+        scores = report["scores"]
+        return {
+            "status": "success",
+            "scores": scores,
+            "findings_count": len(report["findings"]),
+            "findings": report["findings"],
+            "defence_questions": report["defence_questions"],
+            "shocks_responsive": scores["shocks_responsive"],
+            "shocks_total": scores["shocks_total"],
+            "base_matches_key": scores["base_matches_key"],
+        }
+    except Exception as e:
+        raise HTTPException(500, detail=f"Demo autopsy failed: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -181,16 +335,24 @@ async def submit_workbook(
 @app.post("/api/dayone/defence/start")
 def defence_start(req: DefenceStartRequest):
     """Start a defence session for a student."""
-    from dayone_defence import DefenceEngine, get_provider, run_demo_session
+    from dayone_defence import DefenceEngine, get_provider
 
     pack_dir = os.path.join(PACKS_DIR, f"pack_seed_{req.seed}")
+    if not os.path.isdir(pack_dir):
+        fallback = os.path.join(BASE_DIR, f"pack_seed_{req.seed}")
+        if os.path.isdir(fallback):
+            pack_dir = fallback
+
     key_path = os.path.join(pack_dir, "key.json")
     wb_path = req.workbook_path or os.path.join(pack_dir, "reference.xlsx")
 
     if not os.path.isfile(key_path):
-        raise HTTPException(404, detail=f"Pack for seed {req.seed} not found.")
-    if not os.path.isfile(wb_path):
-        raise HTTPException(404, detail=f"Workbook not found: {wb_path}")
+        from dayone_generator import write_pack
+        os.makedirs(pack_dir, exist_ok=True)
+        write_pack(req.seed, pack_dir)
+
+    if not os.path.isfile(key_path) or not os.path.isfile(wb_path):
+        raise HTTPException(404, detail="Scenario pack or key not available.")
 
     key = json.load(open(key_path, encoding="utf-8"))
 
@@ -199,8 +361,11 @@ def defence_start(req: DefenceStartRequest):
     qs = defence_questions(static_f, key, limit=3)
 
     if not qs:
-        qs = [{"finding": "DEMO", "where": "Model!N6",
-               "question": "Walk me through how cell N6 computes the landed cost."}]
+        qs = [{
+            "finding": "DEMO",
+            "where": "Model!N6",
+            "question": "Good day. I am Mrs. Bello, Senior Commercial Manager. Walk me through how cell N6 computes the landed cost per unit, and how it reacts if the Naira exchange rate fluctuates."
+        }]
 
     engine = DefenceEngine(get_provider("mock"))
     session = engine.build_session(req.student_id, req.seed, wb_path, qs)
@@ -239,7 +404,7 @@ def defence_answer(req: DefenceAnswerRequest):
         "recommended_level": session.recommended_level,
     }
 
-    # If session is complete, generate evidence brief
+    # If session is complete, generate cryptographic evidence brief
     if len(session.responses) == len(session.questions):
         scores = {
             "shocks_total": 6, "shocks_responsive": 6,
@@ -254,12 +419,21 @@ def defence_answer(req: DefenceAnswerRequest):
         }
         candidate = {
             "alias": f"CANDIDATE-{session.student_id[:8].upper()}",
-            "target_role": "Graduate Analyst",
+            "name": session.student_id,
+            "target_role": "Graduate Commercial Analyst",
         }
         scenario = {"name": "Day One Landed-Cost", "version": "0.1", "seed": session.scenario_seed}
 
         brief = build_brief(scores, defence, candidate, scenario)
         _briefs[brief.brief_id] = brief
+
+        # Persist to disk
+        try:
+            with open(os.path.join(BRIEFS_DIR, f"{brief.brief_id}.json"), "w", encoding="utf-8") as f:
+                f.write(brief.model_dump_json(indent=2))
+        except Exception:
+            pass
+
         result["evidence_brief_id"] = brief.brief_id
         result["evidence_brief_url"] = f"/verify/{brief.brief_id}"
 
@@ -267,7 +441,7 @@ def defence_answer(req: DefenceAnswerRequest):
 
 
 # ---------------------------------------------------------------------------
-# 4. Verification page
+# 4. Verification Page
 # ---------------------------------------------------------------------------
 
 @app.get("/verify/{brief_id}", response_class=HTMLResponse)
@@ -275,11 +449,11 @@ def verify_page(brief_id: str, blind: bool = True):
     """Public, tamper-evident verification page for an Evidence Brief."""
     brief = _briefs.get(brief_id)
     if not brief:
-        # Try loading from disk
         json_path = os.path.join(BRIEFS_DIR, f"{brief_id}.json")
         if os.path.isfile(json_path):
             data = json.load(open(json_path, encoding="utf-8"))
             brief = EvidenceBrief(**data)
+            _briefs[brief_id] = brief
         else:
             raise HTTPException(404, detail="Brief not found.")
 
@@ -299,7 +473,22 @@ def verify_page(brief_id: str, blind: bool = True):
 
 
 # ---------------------------------------------------------------------------
-# 5. Planner
+# 5. Employer Candidate Pipeline
+# ---------------------------------------------------------------------------
+
+@app.get("/api/candidates")
+def list_candidates(blind: bool = True):
+    """List candidate briefs, applying blind mode if requested."""
+    _ensure_initial_candidates()
+    results = []
+    for brief_id, b in _briefs.items():
+        b_view = apply_blind_mode(b) if blind else b
+        results.append(b_view.model_dump(mode="json"))
+    return results
+
+
+# ---------------------------------------------------------------------------
+# 6. Planner
 # ---------------------------------------------------------------------------
 
 @app.post("/api/planner/solve")
@@ -327,7 +516,7 @@ def planner_solve(req: PlannerRequest):
 
 
 # ---------------------------------------------------------------------------
-# 6. Radar
+# 7. Radar
 # ---------------------------------------------------------------------------
 
 @app.get("/api/radar/heatmap")
@@ -363,67 +552,18 @@ def radar_heatmap(department: Optional[str] = None, n_postings: int = 50, seed: 
 
 
 # ---------------------------------------------------------------------------
-# 7. Landing page
+# 8. SME Rails: Voice Note Sanitisation & Brief Extraction
 # ---------------------------------------------------------------------------
 
-@app.get("/", response_class=HTMLResponse)
-def landing():
-    return HTMLResponse("""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sabi — Show You Sabi</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-    color: #fff; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center;
-  }
-  .hero { text-align: center; padding: 40px 20px; max-width: 600px; }
-  h1 { font-size: 3em; margin-bottom: 8px; }
-  .tagline { font-size: 1.2em; opacity: 0.9; margin-bottom: 32px; }
-  .endpoints {
-    background: rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;
-    text-align: left; margin-top: 24px;
-  }
-  .endpoints h3 { margin-bottom: 12px; font-size: 1em; opacity: 0.8; }
-  .ep {
-    display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.9em;
-    align-items: baseline;
-  }
-  .method {
-    background: rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 8px;
-    font-family: monospace; font-size: 0.85em; min-width: 45px; text-align: center;
-  }
-  code { font-family: monospace; opacity: 0.9; }
-  .footer { margin-top: 32px; font-size: 0.8em; opacity: 0.6; }
-</style>
-</head>
-<body>
-<div class="hero">
-  <h1>🎓 Sabi</h1>
-  <p class="tagline">Show you sabi: verified proof of what a graduate can actually do.</p>
-  <p style="font-size:0.95em;opacity:0.85;margin-bottom:16px;">
-    Taught → Practiced → Proven. Code decides, the LLM narrates.
-  </p>
-  <div class="endpoints">
-    <h3>API Endpoints</h3>
-    <div class="ep"><span class="method">POST</span> <code>/api/dayone/pack/generate</code> — Generate a scenario pack</div>
-    <div class="ep"><span class="method">POST</span> <code>/api/dayone/submit</code> — Upload & autopsy a workbook</div>
-    <div class="ep"><span class="method">POST</span> <code>/api/dayone/defence/start</code> — Start defence session</div>
-    <div class="ep"><span class="method">POST</span> <code>/api/dayone/defence/answer</code> — Answer a defence question</div>
-    <div class="ep"><span class="method">GET</span> <code>/verify/{brief_id}</code> — Verify an Evidence Brief</div>
-    <div class="ep"><span class="method">POST</span> <code>/api/planner/solve</code> — Optimise a learning plan</div>
-    <div class="ep"><span class="method">GET</span> <code>/api/radar/heatmap</code> — Curriculum gap analysis</div>
-    <div class="ep"><span class="method">GET</span> <code>/docs</code> — Interactive API documentation</div>
-  </div>
-  <p class="footer">Sabi v0.1 · University-to-Work Gap Hackathon · November 2026</p>
-</div>
-</body>
-</html>""")
+@app.post("/api/sme/process")
+def sme_process(req: SMEProcessRequest):
+    """Mask Nigerian PII and extract structured project brief from voice note."""
+    brief = process_voice_note(
+        req.text,
+        owner_alias=req.owner_alias,
+        business_type=req.business_type,
+    )
+    return brief.model_dump(mode="json")
 
 
 # ---------------------------------------------------------------------------
@@ -432,7 +572,9 @@ def landing():
 
 if __name__ == "__main__":
     import uvicorn
-    print("Starting Sabi API server...")
-    print("Docs: http://localhost:8000/docs")
+    print("=" * 60)
+    print("  🎓 SABI WEB APPLICATION SERVER")
+    print("  Dashboard UI: http://localhost:8000")
+    print("  API Docs:     http://localhost:8000/docs")
+    print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

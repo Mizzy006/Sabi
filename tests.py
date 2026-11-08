@@ -337,3 +337,80 @@ class TestSME:
         short = process_voice_note("Help me with Excel.")
         long = process_voice_note("I need " + "very detailed analysis of " * 30 + "my business data.")
         assert short.effort_days <= long.effort_days
+
+
+# ---------------------------------------------------------------------------
+# Server Endpoints & Frontend Delivery Tests
+# ---------------------------------------------------------------------------
+
+class TestServer:
+    @classmethod
+    def setup_class(cls):
+        from fastapi.testclient import TestClient
+        from sabi_server import app
+        cls.client = TestClient(app)
+
+    def test_landing_page_spa(self):
+        res = self.client.get("/")
+        assert res.status_code == 200
+        html = res.text
+        assert "SABI" in html
+        assert "Student Portal" in html
+        assert "Employer Pipeline" in html
+        assert "Radar Analytics" in html
+        assert "SME Rails" in html
+
+    def test_pack_download(self):
+        res = self.client.get("/api/dayone/pack/1/download")
+        assert res.status_code == 200
+        assert "application/vnd.openxmlformats" in res.headers.get("content-type", "")
+
+    def test_planner_solve(self):
+        res = self.client.post("/api/planner/solve", json={
+            "role": "junior_data_analyst",
+            "weekly_hours": 10.0,
+            "weekly_mb": 500.0,
+            "deadline_weeks": 6,
+            "offline_only": False
+        })
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "optimal"
+        assert data["total_hours"] <= 60.0
+        assert len(data["weekly_breakdown"]) > 0
+
+    def test_radar_heatmap(self):
+        res = self.client.get("/api/radar/heatmap")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data["gaps"]) > 0
+        assert len(data["funnels"]) > 0
+
+    def test_sme_process(self):
+        res = self.client.post("/api/sme/process", json={
+            "text": "Call Alhaji Musa on 08023456789 or musa@gmail.com. Need fuel consumption tracking.",
+            "owner_alias": "Alhaji Musa",
+            "business_type": "Logistics"
+        })
+        assert res.status_code == 200
+        data = res.json()
+        assert data["pii_found"] >= 2
+        assert "[PHONE_REDACTED]" in data["sanitised_transcript"]
+        assert len(data["deliverables"]) > 0
+
+    def test_candidates_endpoint(self):
+        res = self.client.get("/api/candidates?blind=true")
+        assert res.status_code == 200
+        candidates = res.json()
+        assert len(candidates) >= 1
+        # Blind mode ensures personal identifiers are stripped or None
+        assert candidates[0].get("candidate_name") is None
+
+    def test_autopsy_demo(self):
+        res = self.client.post("/api/dayone/submit/demo?seed=1")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["shocks_responsive"] == 6
+        assert data["base_matches_key"] is True
+

@@ -195,18 +195,46 @@ def _recalc_external(path, timeout=120):
 def recalculate(path, timeout=120):
     """Recalculate the workbook at *path* in place and return a report dict.
 
-    Tries backends in order: Excel COM → external script → LibreOffice.
+    Uses an isolated worker process for Windows COM apartment safety and thread-isolation.
     """
-    # 1. Excel COM (Windows with pywin32)
+    # If already running inside worker subprocess, execute COM directly
+    if os.environ.get("_DAYONE_RECALC_WORKER") == "1":
+        if _excel_com_available():
+            return _recalc_excel_com(path, timeout)
+        ext = os.environ.get("DAYONE_RECALC", "")
+        if ext and os.path.isfile(ext):
+            return _recalc_external(path, timeout)
+        return _recalc_libreoffice(path, timeout)
+
+    # Spawn dedicated process for COM apartment isolation
+    this_script = os.path.abspath(__file__)
+    cmd = [sys.executable, this_script, os.path.abspath(path), "--timeout", str(timeout)]
+    env = os.environ.copy()
+    env["_DAYONE_RECALC_WORKER"] = "1"
+    try:
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout + 30,
+            env=env,
+        )
+        if proc.returncode == 0:
+            out_str = proc.stdout.strip()
+            # Extract JSON from output
+            brace_start = out_str.find("{")
+            brace_end = out_str.rfind("}")
+            if brace_start != -1 and brace_end != -1:
+                return json.loads(out_str[brace_start:brace_end + 1])
+    except Exception:
+        pass
+
+    # Direct fallback if subprocess spawning fails
     if _excel_com_available():
         return _recalc_excel_com(path, timeout)
-
-    # 2. External script from env
     ext = os.environ.get("DAYONE_RECALC", "")
     if ext and os.path.isfile(ext):
         return _recalc_external(path, timeout)
-
-    # 3. LibreOffice
     return _recalc_libreoffice(path, timeout)
 
 

@@ -38,15 +38,18 @@ Radar (direction) → Planner (path) → Arena & Day One (practice)
 | File | Purpose | Lines |
 |:-----|:--------|------:|
 | `dayone_generator.py` | Seeded pack generator: starter workbook, reference solution, answer key | 610 |
-| `dayone_recalc.py` | Multi-backend recalculation bridge (Excel COM / LibreOffice) | 170 |
+| `dayone_recalc.py` | Multi-backend recalculation bridge (Excel COM / LibreOffice, subprocess isolation) | 240 |
 | `dayone_autopsy.py` | Deterministic autopsy: static checks, shock tests, defence questions | 431 |
 | `dayone_defence.py` | Targeted defence engine: formula-graph claim checker, LLM persona | 1120 |
 | `sabi_verify.py` | Evidence Brief: SHA-256 signing, blind mode, QR codes, HTML rendering | 710 |
 | `sabi_planner.py` | Constraint-optimised learning path (PuLP ILP solver) | 350 |
 | `sabi_radar.py` | Employer demand vs curriculum gap analysis & cohort funnel | 340 |
-| `sabi_sme.py` | SME voice-note pipeline: PII detection, masking, brief extraction | 400 |
-| `sabi_server.py` | Unified FastAPI server tying all components together | 330 |
-| `tests.py` | Comprehensive test suite (36 tests) | 270 |
+| `sabi_sme.py` | SME voice-note pipeline: PII detection, masking, brief extraction | 480 |
+| `sabi_server.py` | Unified FastAPI server & SPA backend delivering 4 stakeholder portals | 410 |
+| `templates/index.html` | Modern, responsive, low-bandwidth multi-portal SPA dashboard | 370 |
+| `static/sabi.js` | Client-side reactive interaction controller (zero build steps) | 390 |
+| `static/sabi.css` | Nigerian styling accents, pulse indicators & low-data styles | 75 |
+| `tests.py` | Comprehensive test suite (43/43 passing) | 415 |
 
 ---
 
@@ -92,13 +95,19 @@ python sabi_radar.py --department Economics
 python sabi_sme.py --demo
 ```
 
-### Start the API Server
+### Launch the Full Web Application
 
 ```bash
 python sabi_server.py
-# → http://localhost:8000      (landing page)
-# → http://localhost:8000/docs (Swagger API docs)
+# → http://localhost:8000      (Full interactive SPA dashboard)
+# → http://localhost:8000/docs (Swagger API interactive docs)
 ```
+
+The web dashboard is a mobile-first, low-bandwidth (<150KB) single-page application serving 4 interactive stakeholder portals:
+- 🎓 **Student Portal**: Constraint-based study path planner (PuLP solver), Day One starter pack generator & download, drag-and-drop workbook autopsy with 6 metamorphic shock invariant tests, live Mrs. Bello conversational defence chat, and tamper-evident Evidence Brief card.
+- 💼 **Employer Portal**: Blind-first candidate pipeline (pedigree-stripped: hides name, school, and gender to eliminate hiring bias), verified capability tags, shock survival metrics, and 1-click links to cryptographic proofs.
+- 📡 **Radar Analytics**: Department-level curriculum vs employer demand gap analysis matrix, top skill discrepancies, and leaky cohort capability funnels (Taught → Practiced → Proven).
+- 🏢 **SME Rails**: Voice-note & chat transcript intake from Nigerian business owners, side-by-side Nigerian PII redaction shield (masks phones, BVNs, NINs, emails, addresses, names), and structured micro-project brief extraction.
 
 ### Run Tests
 
@@ -112,13 +121,18 @@ python -m pytest tests.py -v
 
 | Method | Path | Description |
 |:-------|:-----|:------------|
+| `GET` | `/` | Interactive multi-portal dashboard SPA |
+| `GET` | `/verify/{brief_id}` | Public tamper-evident verification page |
 | `POST` | `/api/dayone/pack/generate` | Generate a starter workbook pack |
-| `POST` | `/api/dayone/submit` | Upload .xlsx, run full autopsy |
-| `POST` | `/api/dayone/defence/start` | Start a defence session |
-| `POST` | `/api/dayone/defence/answer` | Submit a defence answer |
-| `GET` | `/verify/{brief_id}` | Public verification page |
-| `POST` | `/api/planner/solve` | Optimise a learning plan |
-| `GET` | `/api/radar/heatmap` | Curriculum gap analysis |
+| `GET` | `/api/dayone/pack/{seed}/download` | One-click download starter pack (.xlsx) |
+| `POST` | `/api/dayone/submit` | Upload .xlsx, run full metamorphic autopsy |
+| `POST` | `/api/dayone/submit/demo` | Run autopsy directly on reference pack (1-click demo) |
+| `POST` | `/api/dayone/defence/start` | Start targeted defence session with Mrs. Bello |
+| `POST` | `/api/dayone/defence/answer` | Submit defence explanation (formula-graph verified) |
+| `POST` | `/api/planner/solve` | Optimise a learning plan under hours/MB constraints |
+| `GET` | `/api/radar/heatmap` | Curriculum gap analysis & cohort capability funnels |
+| `POST` | `/api/sme/process` | Mask Nigerian PII & extract structured SME brief |
+| `GET` | `/api/candidates` | Candidate pipeline pool (blind or unblinded view) |
 
 ---
 

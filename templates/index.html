@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabi — Verified Graduate Capability Platform</title>
+    <!-- Tailwind CSS (CDN for zero-build, ultra-fast setup) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/sabi.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sabi: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        navy: {
+                            800: '#1e3a8a',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="hidden"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand & Tagline -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center font-black text-2xl shadow-inner">
+                        🎓
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-xl tracking-tight text-white">SABI</span>
+                            <span class="text-xs bg-emerald-900/80 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-700/60">v0.1</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-medium">Show You Sabi · Verified Graduate Capability Platform</p>
+                    </div>
+                </div>
+
+                <!-- Low-Bandwidth & Status Badges -->
+                <div class="hidden md:flex items-center space-x-4 text-xs">
+                    <div class="flex items-center space-x-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                        <span class="font-medium">Engine API Online</span>
+                    </div>
+                    <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 font-mono">
+                        ⚡ Low-Bandwidth: &lt;140KB · 2G/3G Ready
+                    </div>
+                    <a href="/docs" target="_blank" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 border border-emerald-600/50 hover:border-emerald-500 px-3 py-1.5 rounded-lg transition-colors">
+                        API Docs ↗
+                    </a>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs Bar -->
+            <div class="flex space-x-2 border-t border-slate-800/80 pt-1 overflow-x-auto">
+                <button class="tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-emerald-600 font-semibold text-emerald-700 bg-emerald-50/50 rounded-t-lg transition-colors" data-tab="student" onclick="switchTab('student')">
+                    <span>🎓</span>
+                    <span>Student Portal (Plan & Defend)</span>
+                </button>
+                <button class="tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-transparent font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg transition-colors" data-tab="employer" onclick="switchTab('employer')">
+                    <span>💼</span>
+                    <span>Employer Pipeline (Blind-First)</span>
+                </button>
+                <button class="tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-transparent font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg transition-colors" data-tab="radar" onclick="switchTab('radar')">
+                    <span>📡</span>
+                    <span>Radar Analytics (Curriculum Gap)</span>
+                </button>
+                <button class="tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-transparent font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg transition-colors" data-tab="sme" onclick="switchTab('sme')">
+                    <span>🏢</span>
+                    <span>SME Rails (Voice Note Intake)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Shell -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: STUDENT PORTAL -->
+        <!-- ================================================================= -->
+        <section id="tab-student" class="tab-panel space-y-6">
+            
+            <!-- Banner -->
+            <div class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 rounded-2xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight">Prove Your Real-World Capability</h2>
+                    <p class="text-sm text-emerald-100/90 mt-1 max-w-2xl">
+                        Solve simulated Day One commercial scenarios under realistic metamorphic shocks. Defend your model live to Mrs. Bello to earn tamper-evident, cryptographically signed Tier A evidence.
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2 text-xs bg-emerald-950/60 border border-emerald-700/60 px-4 py-2 rounded-xl">
+                    <span class="text-emerald-400 font-bold">Rule:</span>
+                    <span class="text-slate-200">"Code decides, the LLM narrates"</span>
+                </div>
+            </div>
+
+            <!-- Two-Column Grid: Planner on Left, Scenario & Autopsy on Right -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- LEFT COLUMN: Constraint-Aware Study Planner (5 cols) -->
+                <div class="lg:col-span-5 space-y-5">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base">Constraint Study Planner</h3>
+                                <p class="text-xs text-slate-500">Integer Linear Programming (PuLP) Solver</p>
+                            </div>
+                            <span class="text-xs font-mono font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">Offline-Aware</span>
+                        </div>
+
+                        <!-- Inputs -->
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Target Role</label>
+                                <select id="plan-role" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    <option value="junior_data_analyst">Junior Data Analyst</option>
+                                    <option value="graduate_supply_chain_analyst">Graduate Supply-Chain Analyst</option>
+                                    <option value="operations_associate">Operations Associate</option>
+                                    <option value="financial_modelling_intern">Financial Modelling Intern</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between font-semibold text-slate-700 mb-1">
+                                    <span>Weekly Study Hours</span>
+                                    <span id="hours-val" class="font-bold text-emerald-700">12 hrs/wk</span>
+                                </div>
+                                <input id="plan-hours" type="range" min="4" max="30" value="12" step="2" class="w-full accent-emerald-600" oninput="document.getElementById('hours-val').innerText = this.value + ' hrs/wk'">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between font-semibold text-slate-700 mb-1">
+                                    <span>Weekly Data Budget</span>
+                                    <span id="mb-val" class="font-bold text-emerald-700">500 MB/wk</span>
+                                </div>
+                                <input id="plan-mb" type="range" min="100" max="2000" value="500" step="100" class="w-full accent-emerald-600" oninput="document.getElementById('mb-val').innerText = this.value + ' MB/wk'">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Timeline (Weeks)</label>
+                                    <select id="plan-weeks" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 font-medium">
+                                        <option value="4">4 Weeks</option>
+                                        <option value="6" selected>6 Weeks</option>
+                                        <option value="8">8 Weeks</option>
+                                        <option value="12">12 Weeks</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center pt-5">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input id="plan-offline" type="checkbox" class="accent-emerald-600 rounded">
+                                        <span class="font-medium text-slate-700 text-xs">Offline Only</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button id="btn-solve-plan" onclick="solvePlan()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-2">
+                                <span>Calculate Optimal Path</span>
+                            </button>
+                        </div>
+
+                        <!-- Solver Stats Summary -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-center">
+                            <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <span class="block text-[10px] text-slate-500 font-medium uppercase">Hours</span>
+                                <span id="stat-total-hours" class="font-bold text-slate-800 text-sm">--</span>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <span class="block text-[10px] text-slate-500 font-medium uppercase">Data</span>
+                                <span id="stat-total-mb" class="font-bold text-blue-700 text-sm">--</span>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <span class="block text-[10px] text-slate-500 font-medium uppercase">Cost</span>
+                                <span id="stat-total-cost" class="font-bold text-amber-700 text-sm">--</span>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <span class="block text-[10px] text-slate-500 font-medium uppercase">Skill Gain</span>
+                                <span id="stat-skill-gain" class="font-bold text-emerald-700 text-sm">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Weekly Breakdown Container -->
+                        <div class="space-y-2 pt-1">
+                            <h4 class="font-semibold text-xs text-slate-700 uppercase tracking-wider">Weekly Resource Roadmap</h4>
+                            <div id="plan-schedule" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Skill Gains Progress -->
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <h4 class="font-semibold text-xs text-slate-700 uppercase tracking-wider">Targeted Capability Gained</h4>
+                            <div id="plan-skill-gains" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Day One Scenario, Autopsy & Defence (7 cols) -->
+                <div class="lg:col-span-7 space-y-5">
+                    
+                    <!-- STEP 1: Scenario & Pack Download Card -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">DAY ONE SCENARIO #01</span>
+                                <h3 class="font-bold text-slate-900 text-base mt-1">Apapa Port Landed-Cost Commercial Model</h3>
+                            </div>
+                            <span class="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-md">Timebox: 90 mins</span>
+                        </div>
+
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            A container of 4 SKU lines has docked at Apapa Port. You must construct a clean, dynamic spreadsheet model converting USD purchase prices into Nigerian Naira (₦), applying the revised ECOWAS Common External Tariff, port handling surcharges, and demurrage penalties. Your formula graph must react correctly when commercial variables change.
+                        </p>
+
+                        <!-- Seed & Generator Form -->
+                        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center space-x-2">
+                                <label class="font-semibold text-slate-700">Student Alias:</label>
+                                <input id="candidate-alias" type="text" value="Ada Okafor" class="bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 font-medium w-36">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <label class="font-semibold text-slate-700">Instance Seed:</label>
+                                <input id="pack-seed" type="number" value="1" min="1" max="999" class="bg-white border border-slate-300 rounded px-2 py-1 text-slate-800 font-mono w-16 text-center">
+                            </div>
+                            <button id="btn-generate-pack" onclick="generateDayOnePack()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors">
+                                Generate Pack
+                            </button>
+                        </div>
+
+                        <!-- Pack Ready Download Box -->
+                        <div id="pack-download-section" class="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📥</span>
+                                <div>
+                                    <h4 class="font-bold text-xs text-emerald-950">Pack Ready for Download</h4>
+                                    <p class="text-[11px] text-emerald-700">Includes starter template, seed parameters & task brief</p>
+                                </div>
+                            </div>
+                            <a id="pack-download-btn" href="/api/dayone/pack/1/download" download class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition-colors flex items-center space-x-1">
+                                <span>Download Starter (.xlsx)</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Submission & Metamorphic Autopsy -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-900 text-base">Workbook Submission & Autopsy</h3>
+                            <span class="text-xs text-slate-500">Static Checks + 6 Metamorphic Shocks</span>
+                        </div>
+
+                        <!-- Dropzone -->
+                        <div id="workbook-dropzone" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-6 text-center cursor-pointer transition-colors">
+                            <input id="submission-file" type="file" accept=".xlsx" class="hidden">
+                            <div class="space-y-1">
+                                <span class="text-3xl inline-block">📊</span>
+                                <p class="text-xs font-semibold text-slate-700">Drop your completed <span class="font-mono text-emerald-700">.xlsx</span> model here, or browse</p>
+                                <p id="dropzone-file-name" class="text-[11px] text-slate-400">Strictly .xlsx (No macro/VBA allowed)</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button id="btn-autopsy-upload" onclick="runAutopsySubmission(false)" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-4 rounded-lg shadow transition-colors">
+                                Run Autopsy on Upload
+                            </button>
+                            <button id="btn-autopsy-demo" onclick="runAutopsySubmission(true)" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-2.5 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-1.5">
+                                <span>⚡</span>
+                                <span>Demo with Reference Pack</span>
+                            </button>
+                        </div>
+
+                        <!-- Autopsy Scorecard (Hidden until evaluated) -->
+                        <div id="autopsy-results-card" class="hidden bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wide">Autopsy Scorecard</h4>
+                                <span class="text-[11px] font-mono text-slate-500">Deterministic Engine</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                    <span class="block text-[10px] text-slate-500 uppercase font-semibold">Shocks Survived</span>
+                                    <span id="shocks-score-badge" class="font-black text-emerald-700 text-base">6 / 6</span>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                    <span class="block text-[10px] text-slate-500 uppercase font-semibold">Formula Hygiene</span>
+                                    <span id="typed-numbers-badge" class="inline-block mt-1 text-[11px] font-semibold text-emerald-800">Clean Formula Graph</span>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                    <span class="block text-[10px] text-slate-500 uppercase font-semibold">Reference Match</span>
+                                    <span id="key-match-badge" class="inline-block mt-1 text-[11px] font-semibold text-emerald-800">Matches Key</span>
+                                </div>
+                            </div>
+
+                            <!-- Metamorphic Shocks Breakdown -->
+                            <div class="bg-white rounded-lg p-3 border border-slate-200 text-xs space-y-1.5">
+                                <span class="font-semibold text-slate-700 block text-[11px]">Metamorphic Shock Invariance Tests:</span>
+                                <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-600">
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>FX Shock (+25% NGN/USD)</span></div>
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>Customs Tariff (+10%)</span></div>
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>Port Demurrage (+5 Days)</span></div>
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>Ocean Freight (+30%)</span></div>
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>Volume Discount (-15%)</span></div>
+                                    <div class="flex items-center space-x-1.5"><span class="text-emerald-600 font-bold">✓</span><span>Target Margin (35% → 40%)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Defence Gate Initiator -->
+                            <div id="defence-start-container" class="pt-2">
+                                <button id="btn-start-defence" onclick="startDefenceSession()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-3 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-2">
+                                    <span>Proceed to Live Defence with Mrs. Bello →</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Targeted Defence Chat Room (Mrs. Bello) -->
+                    <div id="defence-chat-card" class="hidden bg-white rounded-xl border-2 border-emerald-600/60 shadow-lg p-5 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center text-lg font-bold shadow">
+                                    👩🏾‍💼
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm">Mrs. Bello</h4>
+                                    <p class="text-[11px] text-slate-500 font-medium">Senior Commercial Manager · Targeted Formula Defence</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span id="defence-round-indicator" class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Turn 1 of 3</span>
+                                <span id="defence-question-target" class="block text-[10px] font-mono text-slate-400 mt-0.5">Target: Model!N6</span>
+                            </div>
+                        </div>
+
+                        <!-- Dialogue Box -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                            <p class="text-xs font-semibold text-emerald-900">Mrs. Bello:</p>
+                            <p id="mrs-bello-text" class="text-xs text-slate-800 leading-relaxed italic font-medium">
+                                "Good day. I see your Apapa landed-cost model. Before I approve this for the Executive Committee, walk me through how cell N6 computes the total landed cost per unit, and how it responds if the exchange rate rises."
+                            </p>
+                        </div>
+
+                        <!-- Student Input Form -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-semibold text-slate-700">Your Technical Explanation:</label>
+                                <button type="button" onclick="fillDemoAnswer()" class="text-emerald-700 hover:text-emerald-800 underline font-medium">
+                                    Insert Suggested Explanation
+                                </button>
+                            </div>
+                            <textarea id="defence-answer-input" rows="3" placeholder="Explain the mechanics: which cells feed N6, what rates are applied, and what happens when FX fluctuates..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                            
+                            <button id="btn-submit-answer" onclick="submitDefenceAnswer()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-2.5 px-4 rounded-lg shadow transition-colors">
+                                Submit Defence Explanation
+                            </button>
+                        </div>
+
+                        <!-- Real-time Classifier Feedback Box -->
+                        <div id="defence-eval-status" class="hidden"></div>
+                    </div>
+
+                    <!-- STEP 4: Cryptographic Evidence Brief Card -->
+                    <div id="evidence-brief-card" class="hidden bg-gradient-to-br from-white to-emerald-50/50 rounded-xl border-2 border-emerald-500 p-5 shadow-md space-y-3">
+                        <div class="flex items-center justify-between border-b border-emerald-200 pb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl">📜</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm">Cryptographic Evidence Brief</h4>
+                                    <p class="text-[11px] text-slate-500">Tamper-Evident SHA-256 Proof</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">TIER A: WORKING</span>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-lg border border-emerald-100 text-xs space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Brief ID:</span>
+                                <span id="brief-id-display" class="font-mono font-bold text-slate-800">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Defence Status:</span>
+                                <span class="font-semibold text-emerald-700">Passed (Understanding Gate Met)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Integrity:</span>
+                                <span class="font-mono text-emerald-800">SHA-256 Signed Digest</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <p class="text-[11px] text-slate-500 italic max-w-xs">
+                                Tier A evidence is auto-verified and capped at "Working". Raises the cost of faking.
+                            </p>
+                            <a id="btn-view-brief" href="#" target="_blank" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow transition-colors flex items-center space-x-1">
+                                <span>Open Verification Page ↗</span>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 2: EMPLOYER PORTAL -->
+        <!-- ================================================================= -->
+        <section id="tab-employer" class="tab-panel hidden space-y-6">
+            
+            <!-- Header bar with Blind Mode Toggle -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Blind-First Candidate Pipeline</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Filter by demonstrated, verified capabilities — not university brand or demographic pedigree.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="btn-toggle-blind" onclick="toggleBlindMode()" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-emerald-700 text-white shadow-sm flex items-center space-x-1.5 transition-colors">
+                        <span>🛡️</span>
+                        <span>Blind Mode: Active (Pedigree Stripped)</span>
+                    </button>
+                    <button onclick="loadCandidates()" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 text-xs font-medium">
+                        ⟳ Refresh Pool
+                    </button>
+                </div>
+            </div>
+
+            <!-- Candidate Cards Grid -->
+            <div id="candidate-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Dynamically populated by Sabi.loadCandidates() -->
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 3: RADAR ANALYTICS -->
+        <!-- ================================================================= -->
+        <section id="tab-radar" class="tab-panel hidden space-y-6">
+            
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Sabi Radar: Curriculum vs. Market Gap Matrix</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Continuous analysis of employer job postings against university course syllabi.</p>
+                </div>
+                <div class="flex items-center space-x-2 text-xs">
+                    <label class="font-semibold text-slate-700">Filter Department:</label>
+                    <select id="radar-dept-select" onchange="loadRadarData()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-medium text-slate-800">
+                        <option value="">All Departments</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Economics">Economics</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Skill Gaps Visual (7 cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-900 text-sm">Top Skill Discrepancies (Employer Demand vs Academic Coverage)</h3>
+                        <div class="flex items-center space-x-3 text-[11px]">
+                            <span class="flex items-center space-x-1"><span class="w-2.5 h-2.5 rounded bg-blue-600"></span><span class="text-slate-600">Market Demand</span></span>
+                            <span class="flex items-center space-x-1"><span class="w-2.5 h-2.5 rounded bg-amber-500"></span><span class="text-slate-600">Syllabus Coverage</span></span>
+                        </div>
+                    </div>
+                    <div id="radar-gaps-container" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Right: Funnel (5 cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <h3 class="font-bold text-slate-900 text-sm">Cohort Capability Funnels</h3>
+                    <div id="radar-funnel-container" class="space-y-4">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 4: SME RAILS -->
+        <!-- ================================================================= -->
+        <section id="tab-sme" class="tab-panel hidden space-y-6">
+            
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">🎙️</span>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">SME Rails: Voice-Note Brief Intake & Sanitisation</h2>
+                        <p class="text-xs text-slate-500">Converts real-world voice notes or messages from Nigerian business owners into verified micro-project briefs.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Intake Form (5 cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                        <div class="border-b border-slate-100 pb-2 flex justify-between items-center">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-700">Voice Note Transcript</h3>
+                            <span class="text-[11px] text-slate-400">Nigerian PII Shield</span>
+                        </div>
+
+                        <!-- Presets -->
+                        <div class="space-y-1.5">
+                            <span class="block text-[11px] font-semibold text-slate-600">Load Sample SME Audio Transcript:</span>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button" onclick="loadSmePreset('adebayo')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-2.5 py-1 rounded-md border border-slate-200 transition-colors">
+                                    🏪 Mrs. Adebayo (Surulere Retail)
+                                </button>
+                                <button type="button" onclick="loadSmePreset('musa')" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-2.5 py-1 rounded-md border border-slate-200 transition-colors">
+                                    🚚 Alhaji Musa (Kano Logistics)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2.5 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Business Owner Alias</label>
+                                <input id="sme-alias" type="text" value="Mrs. Funke Adebayo" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 font-medium">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Business Type</label>
+                                <input id="sme-business" type="text" value="Retail (provisions store, Surulere)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 font-medium">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Raw Transcript / Voice Note</label>
+                                <textarea id="sme-text" rows="7" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                            </div>
+                        </div>
+
+                        <button id="btn-process-sme" onclick="processSmeBrief()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-3 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-1.5">
+                            <span>🛡️ Sanitise & Extract Micro-Project Brief</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Sanitised Output & Structured Brief (7 cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div id="sme-results-container" class="hidden space-y-4">
+                        
+                        <!-- PII Redaction Preview -->
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <h4 class="font-bold text-xs uppercase tracking-wide text-slate-700">Nigerian PII Sanitisation Shield</h4>
+                                <span id="sme-pii-count" class="text-xs font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800">0 Redactions</span>
+                            </div>
+                            <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs leading-relaxed text-slate-700" id="sme-sanitised-text">
+                                <!-- Sanitised text with red badges -->
+                            </div>
+                        </div>
+
+                        <!-- Structured Brief Card -->
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                                <div>
+                                    <span class="text-[10px] font-bold tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase">Tier B Micro-Project Brief</span>
+                                    <h4 class="font-bold text-slate-900 text-sm mt-1">Structured Problem Definition</h4>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span id="sme-privacy-risk" class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Privacy: Medium</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <span class="font-semibold text-slate-600 block mb-1">Problem Statement:</span>
+                                    <p id="sme-brief-problem" class="text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 font-medium">--</p>
+                                </div>
+
+                                <div>
+                                    <span class="font-semibold text-slate-600 block mb-1">Expected Deliverables:</span>
+                                    <ul id="sme-deliverables-list" class="space-y-1 text-slate-700 pl-1">
+                                        <!-- Populated by JS -->
+                                    </ul>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 pt-2">
+                                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                        <span class="block text-[10px] text-slate-500 uppercase font-semibold">Estimated Effort</span>
+                                        <span id="sme-brief-effort" class="font-bold text-slate-800">5 Days</span>
+                                    </div>
+                                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                        <span class="block text-[10px] text-slate-500 uppercase font-semibold">Skills Tested</span>
+                                        <div id="sme-skill-tags" class="flex flex-wrap gap-1 mt-1">
+                                            <!-- Populated by JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Placeholder when not yet extracted -->
+                    <div id="sme-placeholder" class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400 text-xs">
+                        Select a sample voice note on the left and click "Sanitise & Extract" to see the Nigerian PII masking and structured project brief.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <span class="font-bold text-slate-800">🎓 Sabi Platform</span>
+                <span>·</span>
+                <span>Code decides, the LLM narrates</span>
+                <span>·</span>
+                <span>Taught → Practiced → Proven</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/docs" target="_blank" class="hover:text-slate-800">FastAPI Swagger</a>
+                <span>·</span>
+                <a href="https://github.com/Mizzy006/Sabi.git" target="_blank" class="hover:text-slate-800">GitHub Repository</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- App Scripts -->
+    <script src="/static/sabi.js"></script>
+    <script>
+        // Trigger initial preset on SME tab if visited
+        loadSmePreset('adebayo');
+    </script>
+</body>
+</html>
+
