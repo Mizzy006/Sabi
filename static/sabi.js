@@ -1,17 +1,26 @@
 /**
  * Sabi Web Application Frontend Controller
  * Pure vanilla JavaScript - Zero build step, lightweight, low-bandwidth optimized.
+ * Fully functional: Multi-role commercial scenarios + Real microphone recording & audio uploads.
  */
 
 // Global State
 const Sabi = {
     activeTab: 'student',
+    currentRole: 'junior_data_analyst',
     currentSessionId: null,
     currentQuestionIndex: 0,
     defenceQuestions: [],
     lastGeneratedBrief: null,
     blindMode: true,
-    sampleBriefs: []
+    scenarios: {},
+    mediaRecorder: null,
+    audioChunks: [],
+    audioBlob: null,
+    speechRecognizer: null,
+    isRecording: false,
+    recordTimerInterval: null,
+    recordSeconds: 0
 };
 
 // Toast notification helper
@@ -40,7 +49,6 @@ function showToast(message, type = 'info') {
 function switchTab(tabId) {
     Sabi.activeTab = tabId;
     
-    // Update tab button styles
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const isCurrent = btn.getAttribute('data-tab') === tabId;
         if (isCurrent) {
@@ -50,7 +58,6 @@ function switchTab(tabId) {
         }
     });
 
-    // Toggle tab panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
         if (panel.id === `tab-${tabId}`) {
             panel.classList.remove('hidden');
@@ -59,7 +66,6 @@ function switchTab(tabId) {
         }
     });
 
-    // Refresh tab-specific data on visit
     if (tabId === 'employer') {
         loadCandidates();
     } else if (tabId === 'radar') {
@@ -68,10 +74,77 @@ function switchTab(tabId) {
 }
 
 // ---------------------------------------------------------------------------
-// TAB 1: STUDENT PORTAL (PLANNER, DAY ONE PACK, DEFENCE)
+// TAB 1: STUDENT PORTAL (PLANNER, SCENARIOS, AUTOPSY, DEFENCE)
 // ---------------------------------------------------------------------------
 
-// 1. Planner Logic
+// 1. Role & Scenario Synchronization
+async function loadScenarios() {
+    try {
+        const res = await fetch('/api/scenarios');
+        const list = await res.json();
+        list.forEach(s => { Sabi.scenarios[s.role_id] = s; });
+        updateScenarioUI(Sabi.currentRole);
+    } catch (err) {
+        console.warn('Could not load scenarios from API, using defaults:', err);
+    }
+}
+
+function onRoleChange(role) {
+    Sabi.currentRole = role;
+    document.getElementById('plan-role').value = role;
+    solvePlan();
+    updateScenarioUI(role);
+}
+
+function updateScenarioUI(role) {
+    const sc = Sabi.scenarios[role];
+    if (!sc) return;
+
+    // Update Scenario Header & Card
+    const badge = document.getElementById('scenario-badge');
+    const title = document.getElementById('scenario-title');
+    const timebox = document.getElementById('scenario-timebox');
+    const desc = document.getElementById('scenario-desc');
+    const dlBtn = document.getElementById('pack-download-btn');
+
+    if (badge) badge.innerText = `DAY ONE: ${sc.category.toUpperCase()}`;
+    if (title) title.innerText = sc.name;
+    if (timebox) timebox.innerText = `Timebox: ${sc.timebox}`;
+    if (desc) desc.innerText = sc.description;
+    
+    // Update Download Link
+    const seed = parseInt(document.getElementById('pack-seed')?.value) || 1;
+    if (dlBtn) {
+        dlBtn.href = `/api/dayone/pack/${seed}/download?role=${encodeURIComponent(role)}`;
+        dlBtn.innerText = `Download ${sc.role_title} Starter (.xlsx)`;
+    }
+
+    // Update Shocks List
+    const shocksContainer = document.getElementById('scenario-shocks-preview');
+    if (shocksContainer && sc.shocks) {
+        shocksContainer.innerHTML = sc.shocks.map(s => `
+            <div class="flex items-center space-x-1.5 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200">
+                <span class="text-emerald-600 font-bold">✓</span>
+                <div>
+                    <span class="font-semibold block text-slate-800">${s.name}</span>
+                    <span class="text-slate-500 text-[10px]">${s.change}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Update Mrs. Bello Context Prompt
+    const mrsText = document.getElementById('mrs-bello-text');
+    if (mrsText && sc.defence) {
+        mrsText.innerText = `"${sc.defence.question}"`;
+    }
+    const defTarget = document.getElementById('defence-question-target');
+    if (defTarget && sc.defence) {
+        defTarget.innerText = `Target: ${sc.defence.where}`;
+    }
+}
+
+// 2. Study Planner Logic
 async function solvePlan() {
     const role = document.getElementById('plan-role').value;
     const weeklyHours = parseFloat(document.getElementById('plan-hours').value);
@@ -100,13 +173,11 @@ async function solvePlan() {
         if (!res.ok) throw new Error('Solver failed');
         const data = await res.json();
 
-        // Update stats
         document.getElementById('stat-total-hours').innerText = `${data.total_hours} hrs`;
         document.getElementById('stat-total-mb').innerText = `${data.total_mb} MB`;
         document.getElementById('stat-total-cost').innerText = `₦${data.total_cost_ngn.toLocaleString()}`;
         document.getElementById('stat-skill-gain').innerText = `+${(data.demand_weighted_gain * 100).toFixed(0)}%`;
 
-        // Render weekly breakdown
         const scheduleContainer = document.getElementById('plan-schedule');
         scheduleContainer.innerHTML = '';
 
@@ -115,7 +186,7 @@ async function solvePlan() {
         } else {
             data.weekly_breakdown.forEach((w) => {
                 const weekCard = document.createElement('div');
-                weekCard.className = 'border border-slate-200 bg-white rounded-lg p-4 shadow-sm';
+                weekCard.className = 'border border-slate-200 bg-white rounded-lg p-3.5 shadow-sm';
                 
                 let resList = w.resources.map(r => `
                     <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
@@ -123,14 +194,14 @@ async function solvePlan() {
                         <div class="flex items-center space-x-2 text-slate-500">
                             <span>${r.hours}h</span>
                             <span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">${r.mb}MB</span>
-                            ${r.offline ? '<span class="bg-emerald-50 text-emerald-700 px-1 rounded">Offline</span>' : ''}
+                            ${r.offline ? '<span class="bg-emerald-50 text-emerald-700 px-1 rounded text-[10px]">Offline</span>' : ''}
                         </div>
                     </div>
                 `).join('');
 
                 weekCard.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-semibold text-xs uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">Week ${w.week}</span>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="font-semibold text-xs uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Week ${w.week}</span>
                         <span class="text-xs text-slate-500 font-medium">${w.hours_used}h / ${w.mb_used}MB</span>
                     </div>
                     <div class="space-y-1">
@@ -141,7 +212,6 @@ async function solvePlan() {
             });
         }
 
-        // Render skill gains
         const skillsContainer = document.getElementById('plan-skill-gains');
         skillsContainer.innerHTML = '';
         for (const [skill, gain] of Object.entries(data.skill_gains)) {
@@ -161,8 +231,6 @@ async function solvePlan() {
                 skillsContainer.appendChild(item);
             }
         }
-
-        showToast('Optimal learning path calculated!', 'success');
     } catch (err) {
         showToast('Planner solver failed: ' + err.message, 'error');
     } finally {
@@ -171,9 +239,10 @@ async function solvePlan() {
     }
 }
 
-// 2. Day One Pack Generation
+// 3. Day One Pack Generation
 async function generateDayOnePack() {
     const seed = parseInt(document.getElementById('pack-seed').value) || 1;
+    const role = document.getElementById('plan-role').value;
     const btn = document.getElementById('btn-generate-pack');
     btn.disabled = true;
     btn.innerHTML = '⟳ Generating...';
@@ -182,16 +251,16 @@ async function generateDayOnePack() {
         const res = await fetch('/api/dayone/pack/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ seed: seed })
+            body: JSON.stringify({ seed: seed, role: role })
         });
         const data = await res.json();
         
         if (res.ok) {
             document.getElementById('pack-download-section').classList.remove('hidden');
             const downloadLink = document.getElementById('pack-download-btn');
-            downloadLink.href = `/api/dayone/pack/${seed}/download`;
-            downloadLink.innerText = `Download Starter Pack (Seed #${seed} .xlsx)`;
-            showToast(`Starter pack #${seed} generated! Ready to download.`, 'success');
+            downloadLink.href = `/api/dayone/pack/${seed}/download?role=${encodeURIComponent(role)}`;
+            downloadLink.innerText = `Download ${data.scenario?.role_title || 'Starter'} Pack (Seed #${seed} .xlsx)`;
+            showToast(`Starter pack for ${data.scenario?.name || role} generated! Ready to download.`, 'success');
         } else {
             showToast(`Generation error: ${data.detail || 'Failed'}`, 'error');
         }
@@ -203,7 +272,7 @@ async function generateDayOnePack() {
     }
 }
 
-// 3. Autopsy Submission
+// 4. Autopsy Submission
 async function runAutopsySubmission(isDemo = false) {
     const autopsyBtn = document.getElementById(isDemo ? 'btn-autopsy-demo' : 'btn-autopsy-upload');
     const originalText = autopsyBtn.innerText;
@@ -213,9 +282,10 @@ async function runAutopsySubmission(isDemo = false) {
     try {
         let data;
         const seed = parseInt(document.getElementById('pack-seed').value) || 1;
+        const role = document.getElementById('plan-role').value;
 
         if (isDemo) {
-            const res = await fetch(`/api/dayone/submit/demo?seed=${seed}`, { method: 'POST' });
+            const res = await fetch(`/api/dayone/submit/demo?seed=${seed}&role=${encodeURIComponent(role)}`, { method: 'POST' });
             data = await res.json();
         } else {
             const fileInput = document.getElementById('submission-file');
@@ -229,6 +299,7 @@ async function runAutopsySubmission(isDemo = false) {
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             formData.append('seed', seed);
+            formData.append('role', role);
 
             const res = await fetch('/api/dayone/submit', {
                 method: 'POST',
@@ -238,7 +309,7 @@ async function runAutopsySubmission(isDemo = false) {
         }
 
         renderAutopsyScorecard(data);
-        showToast('Metamorphic Autopsy completed!', 'success');
+        showToast(`Metamorphic Autopsy completed for ${data.scenario?.name || role}!`, 'success');
     } catch (err) {
         showToast('Autopsy failed: ' + err.message, 'error');
     } finally {
@@ -252,13 +323,11 @@ function renderAutopsyScorecard(data) {
     card.classList.remove('hidden');
     card.scrollIntoView({ behavior: 'smooth' });
 
-    // Shocks
     const shocksBadge = document.getElementById('shocks-score-badge');
     const resp = data.shocks_responsive || (data.scores && data.scores.shocks_responsive) || 0;
     const total = data.shocks_total || (data.scores && data.scores.shocks_total) || 6;
     shocksBadge.innerText = `${resp} / ${total}`;
 
-    // Clean formulas
     const typedFound = (data.scores && data.scores.typed_numbers) || 0;
     const typedBadge = document.getElementById('typed-numbers-badge');
     if (typedFound === 0) {
@@ -269,19 +338,18 @@ function renderAutopsyScorecard(data) {
         typedBadge.innerText = `${typedFound} Hardcoded Numbers Detected`;
     }
 
-    // Constraint & key match
     const baseMatch = data.base_matches_key || (data.scores && data.scores.base_matches_key);
     const keyMatchBadge = document.getElementById('key-match-badge');
     keyMatchBadge.innerText = baseMatch ? 'Matches Reference Key' : 'Base Values Differ';
     keyMatchBadge.className = `text-xs font-semibold px-2.5 py-1 rounded ${baseMatch ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
 
-    // Ready for Defence
     document.getElementById('defence-start-container').classList.remove('hidden');
 }
 
-// 4. Targeted Defence (Mrs. Bello)
+// 5. Targeted Defence (Mrs. Bello)
 async function startDefenceSession() {
     const seed = parseInt(document.getElementById('pack-seed').value) || 1;
+    const role = document.getElementById('plan-role').value;
     const candidateAlias = document.getElementById('candidate-alias').value.trim() || 'student_001';
 
     const btn = document.getElementById('btn-start-defence');
@@ -294,7 +362,8 @@ async function startDefenceSession() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 student_id: candidateAlias,
-                seed: seed
+                seed: seed,
+                role: role
             })
         });
 
@@ -305,7 +374,6 @@ async function startDefenceSession() {
         Sabi.defenceQuestions = data.questions;
         Sabi.currentQuestionIndex = 0;
 
-        // Render defence room
         document.getElementById('defence-chat-card').classList.remove('hidden');
         document.getElementById('defence-start-container').classList.add('hidden');
         renderCurrentDefenceQuestion();
@@ -320,24 +388,23 @@ async function startDefenceSession() {
 
 function renderCurrentDefenceQuestion() {
     if (Sabi.currentQuestionIndex >= Sabi.defenceQuestions.length) {
-        // Complete!
         document.getElementById('defence-chat-card').classList.add('hidden');
         return;
     }
 
     const q = Sabi.defenceQuestions[Sabi.currentQuestionIndex];
     document.getElementById('defence-round-indicator').innerText = `Turn ${Sabi.currentQuestionIndex + 1} of ${Sabi.defenceQuestions.length}`;
-    document.getElementById('defence-question-target').innerText = `Target: ${q.where || 'Formula Model'}`;
+    document.getElementById('defence-question-target').innerText = `Target: ${q.where || 'Model!N6'}`;
     document.getElementById('mrs-bello-text').innerText = q.question;
 
     document.getElementById('defence-answer-input').value = '';
     document.getElementById('defence-eval-status').classList.add('hidden');
 }
 
-// Prefill recommended demo answer
 function fillDemoAnswer() {
-    const q = Sabi.defenceQuestions[Sabi.currentQuestionIndex];
-    let sample = "Cell N6 computes the total landed cost per unit by taking the baseline CIF price in USD from C6, multiplying it by the exchange rate in C4 to convert to Naira, then adding the 20% customs tariff, 5% port surcharge, and the freight demurrage per unit. If the exchange rate increases by 25%, cell N6 automatically inflates because it references C4 dynamically.";
+    const sc = Sabi.scenarios[Sabi.currentRole];
+    let sample = sc?.defence?.sample_answer || 
+        "Cell N6 computes the output by multiplying baseline parameters from row 6 by the conversion rates in Inputs sheet. When commercial variables fluctuate, cell N6 adjusts dynamically through formula dependencies.";
     document.getElementById('defence-answer-input').value = sample;
 }
 
@@ -365,7 +432,6 @@ async function submitDefenceAnswer() {
 
         const data = await res.json();
         
-        // Display verdict badge
         const evalBox = document.getElementById('defence-eval-status');
         evalBox.classList.remove('hidden');
         
@@ -379,7 +445,6 @@ async function submitDefenceAnswer() {
             <p class="text-xs opacity-90">Gate: ${data.understanding_gate ? '✅ Passed Understanding Gate' : '⚠️ Under Review'} · Recommended Level: ${data.recommended_level}</p>
         `;
 
-        // If completed and brief generated
         if (data.evidence_brief_id) {
             Sabi.lastGeneratedBrief = data.evidence_brief_id;
             setTimeout(() => {
@@ -387,7 +452,6 @@ async function submitDefenceAnswer() {
                 renderEvidenceBriefPreview(data.evidence_brief_id, data.evidence_brief_url);
             }, 1200);
         } else {
-            // Next question after short delay
             setTimeout(() => {
                 Sabi.currentQuestionIndex++;
                 renderCurrentDefenceQuestion();
@@ -504,7 +568,7 @@ function toggleBlindMode() {
 }
 
 // ---------------------------------------------------------------------------
-// TAB 3: RADAR ANALYTICS (CURRICULUM GAP ANALYSIS)
+// TAB 3: RADAR ANALYTICS
 // ---------------------------------------------------------------------------
 
 async function loadRadarData() {
@@ -553,7 +617,6 @@ async function loadRadarData() {
             chartContainer.appendChild(row);
         });
 
-        // Render cohort funnel
         funnelContainer.innerHTML = '';
         data.funnels.forEach(f => {
             const card = document.createElement('div');
@@ -598,18 +661,20 @@ async function loadRadarData() {
 }
 
 // ---------------------------------------------------------------------------
-// TAB 4: SME RAILS (VOICE NOTE INTAKE & REDACTION)
+// TAB 4: SME RAILS (MICROPHONE RECORDING & AUDIO FILE UPLOADS)
 // ---------------------------------------------------------------------------
 
 const SME_SAMPLES = {
     adebayo: {
         alias: "Mrs. Funke Adebayo",
         business: "Retail (provisions store, Surulere)",
+        audioUrl: "/voice_notes/mrs_adebayo_retail.wav",
         text: "Good morning, my name is Mrs. Funke Adebayo. I run a provisions store in Surulere, Lagos. My address is 15 Bode Thomas Street, Surulere. My phone number is 08034567890. I have a problem with my sales records. I've been keeping them in exercise books for three years but I want someone to help me put everything into Excel so I can see which products are selling well and which ones are not moving. I need a chart showing my monthly sales trend and which category of goods makes the most money. I also want to know my best and worst customers. My email is funke.adebayo@gmail.com. The data is in five exercise books, maybe about 2000 entries. I can photograph the pages. I need this done in one week because my accountant Mr. Chukwuma Obi needs it for tax filing. My BVN is 22345678901. Thank you."
     },
     musa: {
         alias: "Alhaji Musa",
         business: "Logistics (haulage company)",
+        audioUrl: "/voice_notes/alhaji_musa_logistics.wav",
         text: "Good afternoon. This is Alhaji Musa from Kano Logistics. Call me at 08123456789. I need someone who knows Excel well to help me clean up our fuel consumption records. We have 12 trucks driving Lagos-Kano-Kaduna route. The drivers submit receipts for diesel and maintenance every week. Right now everything is scattered. I want a proper template where my manager can enter the litres of diesel bought, the amount paid, distance covered, and it will calculate cost per kilometre. If you can help, email me at musa.haulage@yahoo.com or send WhatsApp. My business reg is RC-98765432101."
     }
 };
@@ -621,7 +686,134 @@ function loadSmePreset(presetKey) {
     document.getElementById('sme-alias').value = data.alias;
     document.getElementById('sme-business').value = data.business;
     document.getElementById('sme-text').value = data.text;
-    showToast(`Loaded sample brief from ${data.alias}`, 'info');
+    
+    // Set up audio player with preset audio file
+    const audioPlayer = document.getElementById('sme-audio-player');
+    const audioContainer = document.getElementById('sme-audio-player-container');
+    if (audioPlayer && audioContainer) {
+        audioPlayer.src = data.audioUrl;
+        audioContainer.classList.remove('hidden');
+        document.getElementById('audio-source-label').innerText = `Preset Audio: ${data.alias}`;
+    }
+
+    showToast(`Loaded sample audio and transcript for ${data.alias}`, 'info');
+}
+
+// Microphone Recording via MediaRecorder + Web Speech API
+async function toggleAudioRecording() {
+    if (Sabi.isRecording) {
+        stopAudioRecording();
+    } else {
+        startAudioRecording();
+    }
+}
+
+async function startAudioRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        Sabi.audioChunks = [];
+        Sabi.mediaRecorder = new MediaRecorder(stream);
+
+        Sabi.mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) Sabi.audioChunks.push(e.data);
+        };
+
+        Sabi.mediaRecorder.onstop = () => {
+            Sabi.audioBlob = new Blob(Sabi.audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(Sabi.audioBlob);
+            const audioPlayer = document.getElementById('sme-audio-player');
+            const audioContainer = document.getElementById('sme-audio-player-container');
+            if (audioPlayer && audioContainer) {
+                audioPlayer.src = audioUrl;
+                audioContainer.classList.remove('hidden');
+                document.getElementById('audio-source-label').innerText = 'Microphone Recording';
+            }
+        };
+
+        Sabi.mediaRecorder.start(200);
+        Sabi.isRecording = true;
+
+        // UI state update
+        const recBtn = document.getElementById('btn-record-audio');
+        recBtn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2 animate-pulse';
+        recBtn.innerHTML = `<span>⏹️</span><span>Stop Recording (<span id="record-timer">00:00</span>)</span>`;
+
+        // Start SpeechRecognition if supported in browser
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            Sabi.speechRecognizer = new SpeechRecognition();
+            Sabi.speechRecognizer.continuous = true;
+            Sabi.speechRecognizer.interimResults = true;
+            Sabi.speechRecognizer.lang = 'en-NG'; // Nigerian English locale
+
+            Sabi.speechRecognizer.onresult = (event) => {
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    interim += event.results[i][0].transcript;
+                }
+                if (interim.trim()) {
+                    document.getElementById('sme-text').value = interim;
+                }
+            };
+            Sabi.speechRecognizer.start();
+        }
+
+        // Timer interval
+        Sabi.recordSeconds = 0;
+        Sabi.recordTimerInterval = setInterval(() => {
+            Sabi.recordSeconds++;
+            const mins = String(Math.floor(Sabi.recordSeconds / 60)).padStart(2, '0');
+            const secs = String(Sabi.recordSeconds % 60).padStart(2, '0');
+            const timerSpan = document.getElementById('record-timer');
+            if (timerSpan) timerSpan.innerText = `${mins}:${secs}`;
+        }, 1000);
+
+        showToast('Microphone recording started. Speak your brief...', 'info');
+    } catch (err) {
+        showToast('Microphone access denied or unsupported: ' + err.message, 'warning');
+    }
+}
+
+function stopAudioRecording() {
+    if (Sabi.mediaRecorder && Sabi.isRecording) {
+        Sabi.mediaRecorder.stop();
+        Sabi.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    if (Sabi.speechRecognizer) {
+        try { Sabi.speechRecognizer.stop(); } catch (e) {}
+    }
+    clearInterval(Sabi.recordTimerInterval);
+    Sabi.isRecording = false;
+
+    const recBtn = document.getElementById('btn-record-audio');
+    recBtn.className = 'bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2';
+    recBtn.innerHTML = `<span>🎙️</span><span>Record Voice Note</span>`;
+
+    showToast('Voice note recorded! Ready to sanitise and extract.', 'success');
+}
+
+// Audio File Selection Handler
+function handleAudioFileSelected(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    Sabi.audioBlob = file;
+
+    const audioUrl = URL.createObjectURL(file);
+    const audioPlayer = document.getElementById('sme-audio-player');
+    const audioContainer = document.getElementById('sme-audio-player-container');
+    if (audioPlayer && audioContainer) {
+        audioPlayer.src = audioUrl;
+        audioContainer.classList.remove('hidden');
+        document.getElementById('audio-source-label').innerText = `Uploaded Audio: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+    }
+
+    // Default contextual note if transcript is empty
+    const currentText = document.getElementById('sme-text').value.trim();
+    if (!currentText) {
+        document.getElementById('sme-text').value = `Voice note uploaded: ${file.name}. Audio is loaded in the player.`;
+    }
+
+    showToast(`Loaded audio file: ${file.name}`, 'info');
 }
 
 async function processSmeBrief() {
@@ -629,36 +821,59 @@ async function processSmeBrief() {
     const alias = document.getElementById('sme-alias').value.trim() || 'SME_OWNER';
     const business = document.getElementById('sme-business').value.trim() || 'Small Business';
 
-    if (!text) {
-        showToast('Please enter a voice note transcript first.', 'warning');
-        return;
-    }
-
     const btn = document.getElementById('btn-process-sme');
     btn.disabled = true;
     btn.innerHTML = '⟳ Sanitising Nigerian PII & Extracting Brief...';
 
     try {
-        const res = await fetch('/api/sme/process', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: text,
-                owner_alias: alias,
-                business_type: business
-            })
-        });
+        let res, briefData;
 
-        if (!res.ok) throw new Error('Processing failed');
-        const brief = await res.json();
+        // If user recorded or uploaded an audio file, send to upload-audio endpoint
+        if (Sabi.audioBlob && (Sabi.audioBlob instanceof Blob || Sabi.audioBlob instanceof File)) {
+            const formData = new FormData();
+            formData.append('audio', Sabi.audioBlob, Sabi.audioBlob.name || 'voice_note.webm');
+            formData.append('owner_alias', alias);
+            formData.append('business_type', business);
+            if (text) formData.append('transcript', text);
 
-        renderSmeResult(brief);
+            res = await fetch('/api/sme/upload-audio', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            briefData = data.brief;
+            if (data.audio_url) {
+                document.getElementById('sme-audio-player').src = data.audio_url;
+                document.getElementById('sme-audio-player-container').classList.remove('hidden');
+            }
+        } else {
+            // Text-only pipeline
+            if (!text) {
+                showToast('Please record audio, upload an audio file, or enter transcript text first.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = '🛡️ Sanitise & Extract Micro-Project Brief';
+                return;
+            }
+
+            res = await fetch('/api/sme/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: text,
+                    owner_alias: alias,
+                    business_type: business
+                })
+            });
+            briefData = await res.json();
+        }
+
+        renderSmeResult(briefData);
         showToast('Brief successfully sanitised and extracted!', 'success');
     } catch (err) {
         showToast('Error processing brief: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Sanitise & Extract Micro-Project Brief';
+        btn.innerHTML = '🛡️ Sanitise & Extract Micro-Project Brief';
     }
 }
 
@@ -667,15 +882,12 @@ function renderSmeResult(brief) {
     container.classList.remove('hidden');
     container.scrollIntoView({ behavior: 'smooth' });
 
-    // PII Count
     document.getElementById('sme-pii-count').innerText = `${brief.pii_found} PII items redacted`;
     
-    // Highlighted transcript
     let sanitised = brief.sanitised_transcript;
     sanitised = sanitised.replace(/\[([A-Z_]+_REDACTED)\]/g, '<span class="redacted-tag">$1</span>');
     document.getElementById('sme-sanitised-text').innerHTML = sanitised;
 
-    // Extracted brief info
     document.getElementById('sme-brief-problem').innerText = brief.problem_statement;
     document.getElementById('sme-brief-effort').innerText = `${brief.effort_days} Days (${brief.effort_estimate})`;
     
@@ -689,11 +901,9 @@ function renderSmeResult(brief) {
         riskBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800';
     }
 
-    // Deliverables list
     const delivList = document.getElementById('sme-deliverables-list');
     delivList.innerHTML = brief.deliverables.map(d => `<li class="flex items-start space-x-2"><span class="text-emerald-600 font-bold">✓</span><span>${d}</span></li>`).join('');
 
-    // Skill tags
     const skillContainer = document.getElementById('sme-skill-tags');
     skillContainer.innerHTML = brief.skill_tags.map(t => `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded font-mono font-medium">${t}</span>`).join(' ');
 }
@@ -703,10 +913,21 @@ function renderSmeResult(brief) {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Load scenario metadata
+    loadScenarios();
+
     // Initial solve for default planner view
     solvePlan();
 
-    // Setup drag and drop for workbook upload
+    // Role selector listener
+    const roleSelect = document.getElementById('plan-role');
+    if (roleSelect) {
+        roleSelect.addEventListener('change', (e) => {
+            onRoleChange(e.target.value);
+        });
+    }
+
+    // Setup workbook dropzone
     const dropzone = document.getElementById('workbook-dropzone');
     const fileInput = document.getElementById('submission-file');
 
@@ -739,5 +960,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
 
+    // Setup audio dropzone for SME Rails
+    const audioDropzone = document.getElementById('audio-dropzone');
+    const audioFileInput = document.getElementById('sme-audio-file');
+    if (audioDropzone && audioFileInput) {
+        audioDropzone.addEventListener('click', () => audioFileInput.click());
+        audioFileInput.addEventListener('change', () => {
+            handleAudioFileSelected(audioFileInput.files);
+        });
+
+        ['dragenter', 'dragover'].forEach(event => {
+            audioDropzone.addEventListener(event, (e) => {
+                e.preventDefault();
+                audioDropzone.classList.add('dropzone-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(event => {
+            audioDropzone.addEventListener(event, (e) => {
+                e.preventDefault();
+                audioDropzone.classList.remove('dropzone-active');
+            });
+        });
+
+        audioDropzone.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files.length > 0) {
+                handleAudioFileSelected(e.dataTransfer.files);
+            }
+        });
+    }
+});

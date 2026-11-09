@@ -15,4 +15,5 @@ ENV/
 # Temporary / dynamic runtime outputs
 packs/
 briefs/
+voice_notes/
 

@@ -414,3 +414,48 @@ class TestServer:
         assert data["shocks_responsive"] == 6
         assert data["base_matches_key"] is True
 
+    def test_scenarios_list(self):
+        res = self.client.get("/api/scenarios")
+        assert res.status_code == 200
+        scenarios = res.json()
+        assert len(scenarios) == 4
+        role_ids = [s["role_id"] for s in scenarios]
+        assert "graduate_supply_chain_analyst" in role_ids
+        assert "junior_data_analyst" in role_ids
+        assert "operations_associate" in role_ids
+        assert "financial_modelling_intern" in role_ids
+
+    def test_scenario_specific(self):
+        res = self.client.get("/api/scenarios/junior_data_analyst")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["id"] == "DA-COHORT-01"
+        assert "E-Commerce" in data["name"]
+        assert len(data["shocks"]) == 6
+
+    def test_sme_audio_upload(self):
+        import io
+        fake_wav = io.BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80>\x00\x00\x00}\x00\x00\x02\x00\x10\x00data\x00\x00\x00\x00")
+        res = self.client.post(
+            "/api/sme/upload-audio",
+            files={"audio": ("voice_note.wav", fake_wav, "audio/wav")},
+            data={
+                "owner_alias": "Mrs. Adebayo",
+                "business_type": "Retail Provisions",
+                "transcript": "Hello, my name is Mrs. Funke Adebayo. Call me on 08012345678. I need help analyzing my exercise book records in Excel.",
+            }
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert "audio_url" in data
+        assert data["brief"]["pii_found"] >= 1
+        assert "[PHONE_REDACTED]" in data["brief"]["sanitised_transcript"]
+        assert len(data["brief"]["deliverables"]) > 0
+
+    def test_role_pack_download(self):
+        res = self.client.get("/api/dayone/pack/1/download?role=junior_data_analyst")
+        assert res.status_code == 200
+        assert "application/vnd.openxmlformats" in res.headers.get("content-type", "")
+
+
