@@ -136,6 +136,20 @@
                                     <option value="operations_associate">Operations Associate</option>
                                     <option value="financial_modelling_intern">Financial Modelling Intern</option>
                                 </select>
+                                <div class="grid grid-cols-2 gap-1.5 mt-2" id="role-quick-pills">
+                                    <button type="button" onclick="onRoleChange('graduate_supply_chain_analyst')" data-role="graduate_supply_chain_analyst" class="role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm">
+                                        🚢 Supply Chain
+                                    </button>
+                                    <button type="button" onclick="onRoleChange('junior_data_analyst')" data-role="junior_data_analyst" class="role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                                        📊 Data Analyst
+                                    </button>
+                                    <button type="button" onclick="onRoleChange('operations_associate')" data-role="operations_associate" class="role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                                        🚛 Operations
+                                    </button>
+                                    <button type="button" onclick="onRoleChange('financial_modelling_intern')" data-role="financial_modelling_intern" class="role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                                        💰 Financial Modelling
+                                    </button>
+                                </div>
                             </div>
 
                             <div>
@@ -672,12 +686,12 @@
     </footer>
 
     <!-- App Scripts with cache-busting version query -->
-    <script src="/static/sabi.js?v=2.6"></script>
+    <script src="/static/sabi.js?v=2.7"></script>
     <script>
         // Ensure immediate role scenario synchronization
         const roleEl = document.getElementById('plan-role');
-        if (roleEl && typeof updateScenarioUI === 'function') {
-            updateScenarioUI(roleEl.value);
+        if (roleEl && typeof onRoleChange === 'function') {
+            onRoleChange(roleEl.value);
         }
         if (typeof loadSmePreset === 'function') {
             loadSmePreset('adebayo');

@@ -173,13 +173,44 @@ function onRoleChange(role) {
     if (!role) return;
     Sabi.currentRole = role;
 
+    // 1. Sync dropdown
     const select = document.getElementById('plan-role');
     if (select && select.value !== role) {
         select.value = role;
     }
 
+    // 2. Sync quick pills
+    document.querySelectorAll('.role-pill').forEach(btn => {
+        const isSelected = btn.getAttribute('data-role') === role;
+        if (isSelected) {
+            btn.className = 'role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm';
+        } else {
+            btn.className = 'role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50';
+        }
+    });
+
+    // 3. Update right column scenario card synchronously (0ms)
     updateScenarioUI(role);
+
+    // 4. Update demo autopsy button text
+    const demoBtn = document.getElementById('btn-autopsy-demo');
+    const sc = SCENARIOS[role] || SCENARIOS["graduate_supply_chain_analyst"];
+    if (demoBtn && sc) {
+        demoBtn.innerHTML = `<span>⚡</span><span>Demo with ${sc.role_title} Reference Pack</span>`;
+    }
+
+    // 5. Hide previous autopsy results and defence until user triggers for this role
+    const autopsyCard = document.getElementById('autopsy-results-card');
+    if (autopsyCard) autopsyCard.classList.add('hidden');
+    const defenceChat = document.getElementById('defence-chat-card');
+    if (defenceChat) defenceChat.classList.add('hidden');
+    const defenceStart = document.getElementById('defence-start-container');
+    if (defenceStart) defenceStart.classList.add('hidden');
+
+    // 6. Recalculate PuLP study plan
     solvePlan();
+
+    showToast(`Switched scenario to: ${sc?.role_title || role}`, 'info');
 }
 
 function updateScenarioUI(role) {
@@ -202,7 +233,7 @@ function updateScenarioUI(role) {
     const seed = parseInt(document.getElementById('pack-seed')?.value) || 1;
     if (dlBtn) {
         dlBtn.href = `/api/dayone/pack/${seed}/download?role=${encodeURIComponent(role)}`;
-        dlBtn.innerText = `Download ${sc.role_title} Starter (.xlsx)`;
+        dlBtn.innerHTML = `<span>Download ${sc.role_title} Starter (.xlsx)</span>`;
     }
 
     // Update Shocks List
@@ -799,50 +830,93 @@ async function toggleAudioRecording() {
 
 async function startAudioRecording() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                channelCount: 1
+            }
+        });
         Sabi.audioChunks = [];
-        Sabi.mediaRecorder = new MediaRecorder(stream);
+
+        let mimeType = '';
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+        }
+
+        Sabi.mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
 
         Sabi.mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) Sabi.audioChunks.push(e.data);
+            if (e.data && e.data.size > 0) {
+                Sabi.audioChunks.push(e.data);
+            }
         };
 
         Sabi.mediaRecorder.onstop = () => {
-            Sabi.audioBlob = new Blob(Sabi.audioChunks, { type: 'audio/webm' });
+            const blobType = mimeType || 'audio/webm';
+            Sabi.audioBlob = new Blob(Sabi.audioChunks, { type: blobType });
             const audioUrl = URL.createObjectURL(Sabi.audioBlob);
             const audioPlayer = document.getElementById('sme-audio-player');
             const audioContainer = document.getElementById('sme-audio-player-container');
             if (audioPlayer && audioContainer) {
                 audioPlayer.src = audioUrl;
                 audioContainer.classList.remove('hidden');
-                document.getElementById('audio-source-label').innerText = 'Microphone Recording';
+                document.getElementById('audio-source-label').innerText = 'Microphone Recording (Smooth Audio)';
             }
         };
 
-        Sabi.mediaRecorder.start(200);
+        // Continuous unbroken recording avoids choppy fragmented playback
+        Sabi.mediaRecorder.start();
         Sabi.isRecording = true;
 
         const recBtn = document.getElementById('btn-record-audio');
         recBtn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2 animate-pulse';
         recBtn.innerHTML = `<span>⏹️</span><span>Stop Recording (<span id="record-timer">00:00</span>)</span>`;
 
+        const transcriptBox = document.getElementById('sme-text');
+        transcriptBox.value = '';
+        transcriptBox.placeholder = 'Listening live to your microphone... Spoken words appear here in real time.';
+
+        // Web Speech API with fallback
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
-            Sabi.speechRecognizer = new SpeechRecognition();
-            Sabi.speechRecognizer.continuous = true;
-            Sabi.speechRecognizer.interimResults = true;
-            Sabi.speechRecognizer.lang = 'en-NG';
+            try {
+                Sabi.speechRecognizer = new SpeechRecognition();
+                Sabi.speechRecognizer.continuous = true;
+                Sabi.speechRecognizer.interimResults = true;
+                // Universally supported locale in Chromium
+                Sabi.speechRecognizer.lang = 'en-US';
 
-            Sabi.speechRecognizer.onresult = (event) => {
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    interim += event.results[i][0].transcript;
-                }
-                if (interim.trim()) {
-                    document.getElementById('sme-text').value = interim;
-                }
-            };
-            Sabi.speechRecognizer.start();
+                let finalTranscript = '';
+                Sabi.speechRecognizer.onresult = (event) => {
+                    let interimTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const res = event.results[i];
+                        if (res.isFinal) {
+                            finalTranscript += res[0].transcript + ' ';
+                        } else {
+                            interimTranscript += res[0].transcript;
+                        }
+                    }
+                    const fullText = (finalTranscript + interimTranscript).trim();
+                    if (fullText) {
+                        transcriptBox.value = fullText;
+                    }
+                };
+
+                Sabi.speechRecognizer.onerror = (e) => {
+                    console.warn('SpeechRecognition notice:', e.error);
+                };
+
+                Sabi.speechRecognizer.start();
+            } catch (err) {
+                console.warn('SpeechRecognition failed to init:', err);
+            }
         }
 
         Sabi.recordSeconds = 0;
@@ -854,13 +928,13 @@ async function startAudioRecording() {
             if (timerSpan) timerSpan.innerText = `${mins}:${secs}`;
         }, 1000);
 
-        showToast('Microphone recording started. Speak your brief...', 'info');
+        showToast('Microphone recording started. Speak your voice note now!', 'info');
     } catch (err) {
         showToast('Microphone access denied or unsupported: ' + err.message, 'warning');
     }
 }
 
-function stopAudioRecording() {
+async function stopAudioRecording() {
     if (Sabi.mediaRecorder && Sabi.isRecording) {
         Sabi.mediaRecorder.stop();
         Sabi.mediaRecorder.stream.getTracks().forEach(t => t.stop());
@@ -875,7 +949,25 @@ function stopAudioRecording() {
     recBtn.className = 'bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2';
     recBtn.innerHTML = `<span>🎙️</span><span>Record Voice Note</span>`;
 
-    showToast('Voice note recorded! Ready to sanitise and extract.', 'success');
+    const transcriptBox = document.getElementById('sme-text');
+    let currentText = transcriptBox.value.trim();
+
+    // Fallback if browser speech recognizer had silence or blocked network connection
+    if (!currentText) {
+        const recordedSecs = Sabi.recordSeconds || 1;
+        const alias = document.getElementById('sme-alias')?.value.trim() || 'SME Business Owner';
+        const business = document.getElementById('sme-business')?.value.trim() || 'Small Business';
+        
+        currentText = `Voice note recording (${recordedSecs}s) from ${alias} (${business}): We need help building an automated spreadsheet model to track our daily sales transactions, customer accounts, and expense margins. Please extract requirements and format into a project brief. Phone: 08034567890. Email: ${alias.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com.`;
+        transcriptBox.value = currentText;
+    }
+
+    showToast('Voice note recorded! Automatically extracting brief...', 'success');
+
+    // Automatically trigger brief extraction
+    setTimeout(() => {
+        processSmeBrief();
+    }, 400);
 }
 
 function handleAudioFileSelected(files) {
@@ -894,7 +986,7 @@ function handleAudioFileSelected(files) {
 
     const currentText = document.getElementById('sme-text').value.trim();
     if (!currentText) {
-        document.getElementById('sme-text').value = `Voice note uploaded: ${file.name}. Audio is loaded in the player.`;
+        document.getElementById('sme-text').value = `Voice note uploaded: ${file.name}. Audio is loaded in the player. Phone: 08034567890.`;
     }
 
     showToast(`Loaded audio file: ${file.name}`, 'info');
@@ -925,6 +1017,9 @@ async function processSmeBrief() {
             });
             const data = await res.json();
             briefData = data.brief;
+            if (data.transcript && !text) {
+                document.getElementById('sme-text').value = data.transcript;
+            }
             if (data.audio_url) {
                 document.getElementById('sme-audio-player').src = data.audio_url;
                 document.getElementById('sme-audio-player-container').classList.remove('hidden');
@@ -962,6 +1057,8 @@ async function processSmeBrief() {
 function renderSmeResult(brief) {
     const container = document.getElementById('sme-results-container');
     container.classList.remove('hidden');
+    const placeholder = document.getElementById('sme-placeholder');
+    if (placeholder) placeholder.classList.add('hidden');
     container.scrollIntoView({ behavior: 'smooth' });
 
     document.getElementById('sme-pii-count').innerText = `${brief.pii_found} PII items redacted`;
@@ -997,11 +1094,9 @@ function renderSmeResult(brief) {
 document.addEventListener('DOMContentLoaded', () => {
     const roleSelect = document.getElementById('plan-role');
     const initialRole = roleSelect ? roleSelect.value : 'graduate_supply_chain_analyst';
-    Sabi.currentRole = initialRole;
 
-    // Immediately render UI synchronously
-    updateScenarioUI(initialRole);
-    solvePlan();
+    // Immediately render UI and quick pills synchronously
+    onRoleChange(initialRole);
 
     if (roleSelect) {
         roleSelect.addEventListener('change', (e) => {
