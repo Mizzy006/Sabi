@@ -547,12 +547,19 @@
 
                         <!-- Audio Capture Controls: Mic Record + Audio Upload Dropzone -->
                         <div class="space-y-2">
-                            <div class="flex items-center space-x-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
                                 <button id="btn-record-audio" type="button" onclick="toggleAudioRecording()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2">
                                     <span>🎙️</span>
                                     <span>Record Voice Note</span>
                                 </button>
-                                <span class="text-[11px] text-slate-400">or upload audio below</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <label for="sme-speech-lang" class="text-[11px] font-semibold text-slate-500">Accent:</label>
+                                    <select id="sme-speech-lang" class="bg-slate-50 border border-slate-300 rounded px-2 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                        <option value="en-NG" selected>🇳🇬 English (Nigeria)</option>
+                                        <option value="en-GB">🇬🇧 English (UK)</option>
+                                        <option value="en-US">🇺🇸 English (US)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Audio Dropzone -->
@@ -595,9 +602,23 @@
                                 <input id="sme-business" type="text" value="Retail (provisions store, Surulere)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-800 font-medium">
                             </div>
                             <div>
-                                <label class="block font-semibold text-slate-700 mb-1">Voice Note Transcript (Live Audio / Editable)</label>
-                                <textarea id="sme-text" rows="5" placeholder="Speak into microphone or upload audio to generate transcript..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block font-semibold text-slate-700">Voice Note Transcript (Live Audio / Fully Editable)</label>
+                                    <button type="button" onclick="polishTranscriptUI()" class="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center space-x-1 hover:underline">
+                                        <span>✨ Polish Nigerian Terms</span>
+                                    </button>
+                                </div>
+                                <textarea id="sme-text" rows="5" placeholder="Speak into microphone or upload audio to generate transcript (or edit directly)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
                             </div>
+
+                            <!-- Optional Whisper AI enhancement key -->
+                            <details class="text-[11px] text-slate-500 border border-slate-200 rounded-lg p-2 bg-slate-50/50">
+                                <summary class="cursor-pointer font-semibold text-slate-700 hover:text-emerald-700">⚡ Optional: Whisper AI Turbo Transcription Key</summary>
+                                <div class="mt-2 space-y-1">
+                                    <input id="sme-groq-key" type="password" placeholder="gsk_... (optional Groq Whisper API key for 0.2s studio accuracy)" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 font-mono text-[11px]">
+                                    <p class="text-[10px] text-slate-400">If omitted, built-in browser speech recognition + Nigerian phonetic normalizer is used.</p>
+                                </div>
+                            </details>
                         </div>
 
                         <button id="btn-process-sme" onclick="processSmeBrief()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs py-3 px-4 rounded-lg shadow transition-colors flex items-center justify-center space-x-1.5">
@@ -686,7 +707,7 @@
     </footer>
 
     <!-- App Scripts with cache-busting version query -->
-    <script src="/static/sabi.js?v=2.7"></script>
+    <script src="/static/sabi.js?v=2.8"></script>
     <script>
         // Ensure immediate role scenario synchronization
         const roleEl = document.getElementById('plan-role');

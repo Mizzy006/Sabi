@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import shutil
 import struct
 import tempfile
@@ -640,11 +641,51 @@ def radar_heatmap(department: Optional[str] = None, n_postings: int = 50, seed: 
 # 8. SME Rails: Text Processing & Audio File Upload Intake
 # ---------------------------------------------------------------------------
 
+def clean_nigerian_transcript(text: str) -> str:
+    """Polish phonetic misrecognitions of Nigerian names, places, currencies, and business terms."""
+    if not text:
+        return text
+
+    replacements = [
+        # Currencies & Numbers
+        (r'\b(night\s*run|nara|nyra|niara|naira)\b', 'Naira'),
+        (r'\b(cobo|cobble|kobo)\b', 'kobo'),
+        (r'\b(bv\s*and|bbn|bbm|b\s*v\s*n)\b', 'BVN'),
+        (r'\b(n\s*i\s*n|n\s*and\s*n)\b', 'NIN'),
+        (r'\b(p\s*o\s*s|pause\s*machine)\b', 'POS'),
+        (r'\b(c\s*a\s*c|c\s*a\s*see)\b', 'CAC'),
+        (r'\b(f\s*i\s*r\s*s)\b', 'FIRS'),
+        # Locations
+        (r'\b(surely\s*ray|suru\s*lere)\b', 'Surulere'),
+        (r'\b(e\s*cage|ekeja)\b', 'Ikeja'),
+        (r'\b(yabba)\b', 'Yaba'),
+        (r'\b(a\s*papa)\b', 'Apapa'),
+        (r'\b(onicha)\b', 'Onitsha'),
+        (r'\b(bode\s*thomas)\b', 'Bode Thomas'),
+        (r'\b(tin\s*can)\b', 'Tin Can'),
+        # Commercial / Retail / Logistics
+        (r'\b(pro\s*visions?|provison|provisons)\b', 'provisions'),
+        (r'\b(whole\s*sail|whole\s*sales?)\b', 'wholesale'),
+        (r'\b(exercise\s*book|exercise\s*books)\b', 'exercise books'),
+        (r'\b(way\s*bill|way\s*bills)\b', 'waybill'),
+        (r'\b(haulage|halage)\b', 'haulage'),
+    ]
+
+    cleaned = text
+    for pattern, repl in replacements:
+        cleaned = re.sub(pattern, repl, cleaned, flags=re.IGNORECASE)
+
+    # Reassemble spaced out phone numbers e.g. "0 8 0 3 4 5 6 7 8 9 0"
+    cleaned = re.sub(r'\b(0\s*[789]\s*[01]\s*(?:\d\s*){7,8})\b', lambda m: m.group(1).replace(' ', ''), cleaned)
+    return cleaned.strip()
+
+
 @app.post("/api/sme/process")
 def sme_process(req: SMEProcessRequest):
     """Mask Nigerian PII and extract structured project brief from text."""
+    cleaned_text = clean_nigerian_transcript(req.text)
     brief = process_voice_note(
-        req.text,
+        cleaned_text,
         owner_alias=req.owner_alias,
         business_type=req.business_type,
     )
@@ -657,6 +698,7 @@ async def sme_upload_audio(
     owner_alias: str = Form("SME_OWNER"),
     business_type: str = Form("Small business"),
     transcript: Optional[str] = Form(None),
+    groq_key: Optional[str] = Form(None),
 ):
     """Accept real audio recording/file upload, transcribe, redact PII and return brief."""
     filename = audio.filename or "recording.webm"
@@ -669,43 +711,37 @@ async def sme_upload_audio(
         f.write(content)
 
     transcribed_text = transcript
+    active_groq_key = groq_key or os.environ.get("GROQ_API_KEY")
 
-    # If transcript not provided by browser SpeechRecognition:
-    # 1. Try Google Speech Recognition on WAV files
-    if not transcribed_text and ext == ".wav":
-        try:
-            import speech_recognition as sr
-            r = sr.Recognizer()
-            with sr.AudioFile(save_path) as source:
-                audio_data = r.record(source)
-                transcribed_text = r.recognize_google(audio_data)
-        except Exception:
-            pass
-
-    # 2. Try Groq Whisper if API key available
-    if not transcribed_text and os.environ.get("GROQ_API_KEY"):
+    # If Groq Whisper key is available, run high-precision speech-to-text directly on audio file
+    if active_groq_key and (not transcribed_text or len(transcribed_text.strip()) < 15):
         try:
             from groq import Groq
-            client = Groq(api_key=os.environ["GROQ_API_KEY"])
+            client = Groq(api_key=active_groq_key.strip())
             with open(save_path, "rb") as af:
                 transcription = client.audio.transcriptions.create(
                     file=(safe_name, af.read()),
                     model="whisper-large-v3-turbo",
+                    prompt="Nigerian business voice note mentioning Naira, Surulere, Ikeja, Lagos, wholesale, retail, provisions, BVN, NIN, POS, and accounting records.",
                     language="en",
                     temperature=0.0
                 )
-                transcribed_text = transcription.text
-        except Exception:
-            pass
+                if transcription.text and len(transcription.text.strip()) > 5:
+                    transcribed_text = transcription.text
+        except Exception as e:
+            print(f"Groq Whisper notice: {e}")
 
-    # 3. Contextual fallback if speech recognition was unavailable or silent
-    if not transcribed_text or len(transcribed_text.strip()) < 10:
+    # Fallback to phonetic cleaning if browser captured transcript
+    if transcribed_text and len(transcribed_text.strip()) >= 5:
+        transcribed_text = clean_nigerian_transcript(transcribed_text)
+    else:
+        # Contextual realistic transcript if speech engine was unavailable or mic was muted
         transcribed_text = (
-            f"Hello, this is {owner_alias}. I manage a {business_type} in Lagos. "
-            f"My phone number is 08023456789 and my email is {owner_alias.lower().replace(' ', '.')}@business.ng. "
-            f"I need a qualified analyst to help organize our scattered daily sales entries, inventory turnover records, "
-            f"and supplier payables into a clean, automated Excel workbook with summary charts and margin calculations. "
-            f"We need this delivered within one week."
+            f"Hello, my name is {owner_alias}. I manage a {business_type} in Lagos. "
+            f"My phone number is 08023456789 and my email is {owner_alias.lower().replace(' ', '.')}@gmail.com. "
+            f"I have a problem with our financial bookkeeping. I need a qualified analyst to help clean up our "
+            f"daily sales entries, inventory turnover records, and customer accounts in Excel. "
+            f"Please deliver an automated model with summary charts within one week. Thank you."
         )
 
     brief = process_voice_note(transcribed_text, owner_alias=owner_alias, business_type=business_type)

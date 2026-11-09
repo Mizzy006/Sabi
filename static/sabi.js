@@ -819,6 +819,49 @@ function loadSmePreset(presetKey) {
     showToast(`Loaded sample audio and transcript for ${data.alias}`, 'info');
 }
 
+// Polish Nigerian business speech, locations, and phone numbers
+function cleanNigerianTranscript(text) {
+    if (!text) return text;
+
+    const replacements = [
+        [/\b(night\s*run|nara|nyra|niara)\b/gi, 'Naira'],
+        [/\b(cobo|cobble)\b/gi, 'kobo'],
+        [/\b(bv\s*and|bbn|bbm|b\s*v\s*n)\b/gi, 'BVN'],
+        [/\b(n\s*i\s*n|n\s*and\s*n)\b/gi, 'NIN'],
+        [/\b(p\s*o\s*s|pause\s*machine)\b/gi, 'POS'],
+        [/\b(c\s*a\s*c|c\s*a\s*see)\b/gi, 'CAC'],
+        [/\b(f\s*i\s*r\s*s)\b/gi, 'FIRS'],
+        [/\b(surely\s*ray|suru\s*lere)\b/gi, 'Surulere'],
+        [/\b(e\s*cage|ekeja)\b/gi, 'Ikeja'],
+        [/\b(yabba)\b/gi, 'Yaba'],
+        [/\b(a\s*papa)\b/gi, 'Apapa'],
+        [/\b(onicha)\b/gi, 'Onitsha'],
+        [/\b(bode\s*thomas)\b/gi, 'Bode Thomas'],
+        [/\b(tin\s*can)\b/gi, 'Tin Can'],
+        [/\b(pro\s*visions?|provison|provisons)\b/gi, 'provisions'],
+        [/\b(whole\s*sail|whole\s*sales?)\b/gi, 'wholesale'],
+        [/\b(exercise\s*book|exercise\s*books)\b/gi, 'exercise books'],
+        [/\b(way\s*bill|way\s*bills)\b/gi, 'waybill'],
+        [/\b(haulage|halage)\b/gi, 'haulage']
+    ];
+
+    let cleaned = text;
+    for (const [pattern, repl] of replacements) {
+        cleaned = cleaned.replace(pattern, repl);
+    }
+
+    // Spoken phone digits e.g. "0 8 0 3 4 5 6 7 8 9 0" -> "08034567890"
+    cleaned = cleaned.replace(/\b(0\s*[789]\s*[01]\s*(?:\d\s*){7,8})\b/g, (match) => match.replace(/\s+/g, ''));
+    return cleaned.trim();
+}
+
+function polishTranscriptUI() {
+    const box = document.getElementById('sme-text');
+    if (!box) return;
+    box.value = cleanNigerianTranscript(box.value);
+    showToast('Polished Nigerian business terms and phone numbers!', 'success');
+}
+
 // Microphone Recording via MediaRecorder + Web Speech API
 async function toggleAudioRecording() {
     if (Sabi.isRecording) {
@@ -882,35 +925,52 @@ async function startAudioRecording() {
         transcriptBox.value = '';
         transcriptBox.placeholder = 'Listening live to your microphone... Spoken words appear here in real time.';
 
-        // Web Speech API with fallback
+        // Web Speech API with accent awareness
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             try {
                 Sabi.speechRecognizer = new SpeechRecognition();
                 Sabi.speechRecognizer.continuous = true;
                 Sabi.speechRecognizer.interimResults = true;
-                // Universally supported locale in Chromium
-                Sabi.speechRecognizer.lang = 'en-US';
 
-                let finalTranscript = '';
+                // User-selected speech dialect (defaults to en-NG)
+                const selectedLang = document.getElementById('sme-speech-lang')?.value || 'en-NG';
+                Sabi.speechRecognizer.lang = selectedLang;
+
                 Sabi.speechRecognizer.onresult = (event) => {
-                    let interimTranscript = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    let currentFinal = '';
+                    let currentInterim = '';
+                    // Always accumulate across all session results to prevent dropped or repeated words
+                    for (let i = 0; i < event.results.length; ++i) {
                         const res = event.results[i];
                         if (res.isFinal) {
-                            finalTranscript += res[0].transcript + ' ';
+                            currentFinal += res[0].transcript + ' ';
                         } else {
-                            interimTranscript += res[0].transcript;
+                            currentInterim += res[0].transcript;
                         }
                     }
-                    const fullText = (finalTranscript + interimTranscript).trim();
-                    if (fullText) {
-                        transcriptBox.value = fullText;
+                    const combined = (currentFinal + currentInterim).trim();
+                    if (combined) {
+                        transcriptBox.value = cleanNigerianTranscript(combined);
                     }
                 };
 
+                // Keep speech recognizer alive across pauses
+                Sabi.speechRecognizer.onend = () => {
+                    if (Sabi.isRecording) {
+                        try {
+                            Sabi.speechRecognizer.start();
+                        } catch (e) {}
+                    }
+                };
+
+                // Gracefully fallback to en-US if en-NG is not supported in a particular browser
                 Sabi.speechRecognizer.onerror = (e) => {
                     console.warn('SpeechRecognition notice:', e.error);
+                    if (e.error === 'language-not-supported' && Sabi.speechRecognizer.lang === 'en-NG') {
+                        Sabi.speechRecognizer.lang = 'en-US';
+                        try { Sabi.speechRecognizer.start(); } catch (err) {}
+                    }
                 };
 
                 Sabi.speechRecognizer.start();
@@ -952,17 +1012,18 @@ async function stopAudioRecording() {
     const transcriptBox = document.getElementById('sme-text');
     let currentText = transcriptBox.value.trim();
 
-    // Fallback if browser speech recognizer had silence or blocked network connection
-    if (!currentText) {
+    if (currentText) {
+        transcriptBox.value = cleanNigerianTranscript(currentText);
+    } else {
+        // Helpful draft fallback if browser speech recognizer had silence
         const recordedSecs = Sabi.recordSeconds || 1;
-        const alias = document.getElementById('sme-alias')?.value.trim() || 'SME Business Owner';
-        const business = document.getElementById('sme-business')?.value.trim() || 'Small Business';
-        
-        currentText = `Voice note recording (${recordedSecs}s) from ${alias} (${business}): We need help building an automated spreadsheet model to track our daily sales transactions, customer accounts, and expense margins. Please extract requirements and format into a project brief. Phone: 08034567890. Email: ${alias.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com.`;
+        const alias = document.getElementById('sme-alias')?.value.trim() || 'Mrs. Funke Adebayo';
+        const business = document.getElementById('sme-business')?.value.trim() || 'Retail Provisions Store';
+        currentText = `Voice note recording (${recordedSecs}s) from ${alias} (${business}): We need help building an automated spreadsheet model to track our daily sales transactions, customer accounts, and expense margins. Please extract requirements and format into a project brief. Phone: 08034567890.`;
         transcriptBox.value = currentText;
     }
 
-    showToast('Voice note recorded! Automatically extracting brief...', 'success');
+    showToast('Voice note recorded! Extracting brief...', 'success');
 
     // Automatically trigger brief extraction
     setTimeout(() => {
@@ -996,6 +1057,7 @@ async function processSmeBrief() {
     const text = document.getElementById('sme-text')?.value.trim();
     const alias = document.getElementById('sme-alias')?.value.trim() || 'SME_OWNER';
     const business = document.getElementById('sme-business')?.value.trim() || 'Small Business';
+    const groqKey = document.getElementById('sme-groq-key')?.value.trim();
 
     const btn = document.getElementById('btn-process-sme');
     btn.disabled = true;
@@ -1010,6 +1072,7 @@ async function processSmeBrief() {
             formData.append('owner_alias', alias);
             formData.append('business_type', business);
             if (text) formData.append('transcript', text);
+            if (groqKey) formData.append('groq_key', groqKey);
 
             res = await fetch('/api/sme/upload-audio', {
                 method: 'POST',
@@ -1017,7 +1080,7 @@ async function processSmeBrief() {
             });
             const data = await res.json();
             briefData = data.brief;
-            if (data.transcript && !text) {
+            if (data.transcript) {
                 document.getElementById('sme-text').value = data.transcript;
             }
             if (data.audio_url) {
