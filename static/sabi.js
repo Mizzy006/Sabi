@@ -1,19 +1,110 @@
 /**
  * Sabi Web Application Frontend Controller
  * Pure vanilla JavaScript - Zero build step, lightweight, low-bandwidth optimized.
- * Fully functional: Multi-role commercial scenarios + Real microphone recording & audio uploads.
+ * Fully functional: Synchronous multi-role commercial scenarios + Real microphone recording & audio uploads.
  */
+
+// Synchronous scenario registry for instant 0ms switching
+const SCENARIOS = {
+    "graduate_supply_chain_analyst": {
+        "id": "SC-APAPA-01",
+        "role_id": "graduate_supply_chain_analyst",
+        "role_title": "Graduate Supply-Chain Analyst",
+        "name": "Apapa Port Landed-Cost Commercial Model",
+        "category": "Supply Chain & Logistics Analytics",
+        "timebox": "90 mins",
+        "description": "A container of 4 SKU lines has docked at Apapa Port. You must construct a clean, dynamic spreadsheet model converting USD purchase prices into Nigerian Naira (₦), applying the revised ECOWAS Common External Tariff, port handling surcharges, and demurrage penalties. Your formula graph must react correctly when commercial variables change.",
+        "shocks": [
+            {"name": "FX Devaluation Shock", "change": "+25% NGN/USD exchange rate"},
+            {"name": "Customs Tariff Spike", "change": "+10% customs duty rate"},
+            {"name": "Port Demurrage", "change": "+5 demurrage days at Apapa terminal"},
+            {"name": "Ocean Freight Inflation", "change": "+30% shipping line surcharge"},
+            {"name": "Volume Discount Shock", "change": "-15% base supplier price"},
+            {"name": "Target Margin Shock", "change": "Retail shelf margin raised from 35% to 40%"}
+        ],
+        "defence": {
+            "where": "Model!N6",
+            "question": "Good day. I am Mrs. Bello, Senior Commercial Manager. Walk me through how cell N6 computes the landed cost per unit, and how it responds if the exchange rate rises.",
+            "sample_answer": "Cell N6 computes the total landed cost per unit by taking the baseline CIF price in USD from C6, multiplying it by the exchange rate in C4 to convert to Naira, then adding the customs tariff, port surcharge, and the freight demurrage per unit. If the exchange rate increases by 25%, cell N6 automatically inflates because it references C4 dynamically."
+        }
+    },
+    "junior_data_analyst": {
+        "id": "DA-COHORT-01",
+        "role_id": "junior_data_analyst",
+        "role_title": "Junior Data Analyst",
+        "name": "E-Commerce Customer Retention & Unit Economics Model",
+        "category": "Product & Customer Analytics",
+        "timebox": "90 mins",
+        "description": "An online marketplace in Yaba, Lagos tracks customer acquisition, monthly recurring revenue (MRR), and cohort retention. You must build a dynamic model calculating Customer Lifetime Value (LTV), Customer Acquisition Cost (CAC) payback periods, and churn rates across 12 monthly cohorts. Your model must prove whether marketing spend is sustainable under churn stress.",
+        "shocks": [
+            {"name": "Churn Rate Spike", "change": "+50% monthly subscriber churn rate"},
+            {"name": "CAC Ad Inflation", "change": "+30% digital marketing acquisition cost"},
+            {"name": "ARPU Promotional Discount", "change": "-15% average order revenue"},
+            {"name": "Retention Curve Drop", "change": "-10% month-over-month cohort retention"},
+            {"name": "Payment Gateway Fee Hike", "change": "+20% processing and transaction fees"},
+            {"name": "Target Payback Constraint", "change": "CAC payback hurdle shortened to ≤ 5 months"}
+        ],
+        "defence": {
+            "where": "Model!N6",
+            "question": "Good day. I am Mrs. Bello. I see your unit economics model. Walk me through how cell N6 computes Customer Lifetime Value (LTV), and what happens to your payback period when monthly churn spikes.",
+            "sample_answer": "Cell N6 computes Customer Lifetime Value by dividing average monthly revenue per user by the monthly churn rate, multiplied by the gross margin percentage in B8. When churn spikes from 6% to 9%, LTV in cell N6 drops proportionally because churn is in the denominator, which in turn extends the CAC payback period beyond our acceptable threshold."
+        }
+    },
+    "operations_associate": {
+        "id": "OP-FLEET-01",
+        "role_id": "operations_associate",
+        "role_title": "Operations Associate",
+        "name": "Interstate Haulage Fleet Dispatch & Route Margins Model",
+        "category": "Operations & Logistics Optimization",
+        "timebox": "90 mins",
+        "description": "A logistics company operates 12 heavy trucks across 4 major Nigerian commercial corridors (Lagos-Kano, Lagos-Onitsha, Lagos-Abuja, PH-Kano). You must build an operational dispatch model calculating diesel consumption, driver trip allowances, transit turnaround times, toll surcharges, and gross corridor contribution margins per ton-km.",
+        "shocks": [
+            {"name": "Diesel Price Pump Hike", "change": "+40% diesel pump price increase"},
+            {"name": "Highway Detour Shock", "change": "+15% transit km due to expressway rehabilitation"},
+            {"name": "Driver Allowance Inflation", "change": "+25% interstate trip allowance"},
+            {"name": "Client Freight Rate Cut", "change": "-10% contracted freight billing tariff"},
+            {"name": "Preventative Overhaul Surcharge", "change": "+₦150k overhaul per 10,000 km"},
+            {"name": "Fleet Margin Hurdle", "change": "Corridor contribution margin threshold raised to 25%"}
+        ],
+        "defence": {
+            "where": "Model!N6",
+            "question": "Good day. I am Mrs. Bello, Operations Director. Walk me through how cell N6 computes the total operating cost per corridor trip, and how your route margins react when the pump price of diesel rises.",
+            "sample_answer": "Cell N6 models the total trip operating cost by multiplying the corridor distance by the truck burn rate (0.38 L/km) and the current diesel pump price in B4, then adding driver trip allowance in B6 and transit road tolls in B7. When diesel price surges by 40%, fuel cost in cell N6 rises immediately, eroding the net route margin in column Q."
+        }
+    },
+    "financial_modelling_intern": {
+        "id": "FM-CASH-01",
+        "role_id": "financial_modelling_intern",
+        "role_title": "Financial Modelling Intern",
+        "name": "Corporate Working Capital & 13-Week Cashflow Runway",
+        "category": "Treasury & Liquidity Risk Management",
+        "timebox": "90 mins",
+        "description": "An Ikeja manufacturing firm needs a 13-week rolling cashflow runway model. You must project weekly collections from corporate debtors (Days Sales Outstanding DSO), scheduled supplier disbursements (Days Payables Outstanding DPO), payroll obligations, and bank overdraft interest to forecast liquidity bottlenecks.",
+        "shocks": [
+            {"name": "Key Debtor Default Delay", "change": "DSO increases from 30 days to 60 days"},
+            {"name": "Supplier Upfront Term Shock", "change": "DPO shortened from 45 days to 15 days"},
+            {"name": "Raw Material Import Inflation", "change": "+25% NGN supplier price increase"},
+            {"name": "Overdraft MPR Rate Tightening", "change": "+400 bps Central Bank interest rate hike"},
+            {"name": "Emergency Plant Capex Outflow", "change": "₦25M critical generator overhaul"},
+            {"name": "Liquidity Buffer Invariance", "change": "Minimum cash buffer constraint raised to ₦15M"}
+        ],
+        "defence": {
+            "where": "Model!N6",
+            "question": "Good day. I am Mrs. Bello, Chief Financial Officer. Walk me through how cell N6 projects the net cash generation for the business line, and how our 13-week runway responds if major debtors delay payment by 30 days.",
+            "sample_answer": "Cell N6 computes the net weekly cashflow by taking collections calculated from DSO in B5, subtracting supplier disbursements dictated by DPO in B6, and deducting weekly payroll and overheads in B8. If corporate debtors delay payment by 30 days, collections in N6 plummet, creating an immediate funding gap that triggers our overdraft facility."
+        }
+    }
+};
 
 // Global State
 const Sabi = {
     activeTab: 'student',
-    currentRole: 'junior_data_analyst',
+    currentRole: 'graduate_supply_chain_analyst',
     currentSessionId: null,
     currentQuestionIndex: 0,
     defenceQuestions: [],
     lastGeneratedBrief: null,
     blindMode: true,
-    scenarios: {},
     mediaRecorder: null,
     audioChunks: [],
     audioBlob: null,
@@ -77,27 +168,22 @@ function switchTab(tabId) {
 // TAB 1: STUDENT PORTAL (PLANNER, SCENARIOS, AUTOPSY, DEFENCE)
 // ---------------------------------------------------------------------------
 
-// 1. Role & Scenario Synchronization
-async function loadScenarios() {
-    try {
-        const res = await fetch('/api/scenarios');
-        const list = await res.json();
-        list.forEach(s => { Sabi.scenarios[s.role_id] = s; });
-        updateScenarioUI(Sabi.currentRole);
-    } catch (err) {
-        console.warn('Could not load scenarios from API, using defaults:', err);
-    }
-}
-
+// Immediate, synchronous role & scenario switcher
 function onRoleChange(role) {
+    if (!role) return;
     Sabi.currentRole = role;
-    document.getElementById('plan-role').value = role;
-    solvePlan();
+
+    const select = document.getElementById('plan-role');
+    if (select && select.value !== role) {
+        select.value = role;
+    }
+
     updateScenarioUI(role);
+    solvePlan();
 }
 
 function updateScenarioUI(role) {
-    const sc = Sabi.scenarios[role];
+    const sc = SCENARIOS[role] || SCENARIOS["graduate_supply_chain_analyst"];
     if (!sc) return;
 
     // Update Scenario Header & Card
@@ -122,12 +208,12 @@ function updateScenarioUI(role) {
     // Update Shocks List
     const shocksContainer = document.getElementById('scenario-shocks-preview');
     if (shocksContainer && sc.shocks) {
-        shocksContainer.innerHTML = sc.shocks.map(s => `
-            <div class="flex items-center space-x-1.5 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200">
-                <span class="text-emerald-600 font-bold">✓</span>
+        shocksContainer.innerHTML = sc.shocks.map((s, idx) => `
+            <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                <span class="text-emerald-700 font-black text-xs">#${idx+1}</span>
                 <div>
-                    <span class="font-semibold block text-slate-800">${s.name}</span>
-                    <span class="text-slate-500 text-[10px]">${s.change}</span>
+                    <span class="font-bold block text-slate-800">${s.name}</span>
+                    <span class="text-slate-500 text-[10px] leading-tight block mt-0.5">${s.change}</span>
                 </div>
             </div>
         `).join('');
@@ -146,16 +232,18 @@ function updateScenarioUI(role) {
 
 // 2. Study Planner Logic
 async function solvePlan() {
-    const role = document.getElementById('plan-role').value;
-    const weeklyHours = parseFloat(document.getElementById('plan-hours').value);
-    const weeklyMb = parseFloat(document.getElementById('plan-mb').value);
-    const weeks = parseInt(document.getElementById('plan-weeks').value);
-    const offlineOnly = document.getElementById('plan-offline').checked;
+    const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
+    const weeklyHours = parseFloat(document.getElementById('plan-hours')?.value || 12);
+    const weeklyMb = parseFloat(document.getElementById('plan-mb')?.value || 500);
+    const weeks = parseInt(document.getElementById('plan-weeks')?.value || 6);
+    const offlineOnly = document.getElementById('plan-offline')?.checked || false;
 
     const btn = document.getElementById('btn-solve-plan');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<span class="animate-spin inline-block mr-2">⟳</span> Solving with PuLP...`;
-    btn.disabled = true;
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = `<span class="animate-spin inline-block mr-2">⟳</span> Solving with PuLP...`;
+        btn.disabled = true;
+    }
 
     try {
         const res = await fetch('/api/planner/solve', {
@@ -234,15 +322,17 @@ async function solvePlan() {
     } catch (err) {
         showToast('Planner solver failed: ' + err.message, 'error');
     } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 }
 
 // 3. Day One Pack Generation
 async function generateDayOnePack() {
-    const seed = parseInt(document.getElementById('pack-seed').value) || 1;
-    const role = document.getElementById('plan-role').value;
+    const seed = parseInt(document.getElementById('pack-seed')?.value) || 1;
+    const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
     const btn = document.getElementById('btn-generate-pack');
     btn.disabled = true;
     btn.innerHTML = '⟳ Generating...';
@@ -268,7 +358,7 @@ async function generateDayOnePack() {
         showToast('Error generating pack: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Generate Pack';
+        btn.innerHTML = 'Generate Role Pack';
     }
 }
 
@@ -281,8 +371,8 @@ async function runAutopsySubmission(isDemo = false) {
 
     try {
         let data;
-        const seed = parseInt(document.getElementById('pack-seed').value) || 1;
-        const role = document.getElementById('plan-role').value;
+        const seed = parseInt(document.getElementById('pack-seed')?.value) || 1;
+        const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
 
         if (isDemo) {
             const res = await fetch(`/api/dayone/submit/demo?seed=${seed}&role=${encodeURIComponent(role)}`, { method: 'POST' });
@@ -290,7 +380,7 @@ async function runAutopsySubmission(isDemo = false) {
         } else {
             const fileInput = document.getElementById('submission-file');
             if (!fileInput.files || fileInput.files.length === 0) {
-                showToast('Please select a completed .xlsx file first, or click "Run Demo with Reference Pack".', 'warning');
+                showToast('Please select a completed .xlsx file first, or click "Demo with Role Reference Pack".', 'warning');
                 autopsyBtn.innerText = originalText;
                 autopsyBtn.disabled = false;
                 return;
@@ -348,9 +438,9 @@ function renderAutopsyScorecard(data) {
 
 // 5. Targeted Defence (Mrs. Bello)
 async function startDefenceSession() {
-    const seed = parseInt(document.getElementById('pack-seed').value) || 1;
-    const role = document.getElementById('plan-role').value;
-    const candidateAlias = document.getElementById('candidate-alias').value.trim() || 'student_001';
+    const seed = parseInt(document.getElementById('pack-seed')?.value) || 1;
+    const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
+    const candidateAlias = document.getElementById('candidate-alias')?.value.trim() || 'student_001';
 
     const btn = document.getElementById('btn-start-defence');
     btn.disabled = true;
@@ -402,14 +492,14 @@ function renderCurrentDefenceQuestion() {
 }
 
 function fillDemoAnswer() {
-    const sc = Sabi.scenarios[Sabi.currentRole];
+    const sc = SCENARIOS[Sabi.currentRole] || SCENARIOS["graduate_supply_chain_analyst"];
     let sample = sc?.defence?.sample_answer || 
         "Cell N6 computes the output by multiplying baseline parameters from row 6 by the conversion rates in Inputs sheet. When commercial variables fluctuate, cell N6 adjusts dynamically through formula dependencies.";
     document.getElementById('defence-answer-input').value = sample;
 }
 
 async function submitDefenceAnswer() {
-    const answer = document.getElementById('defence-answer-input').value.trim();
+    const answer = document.getElementById('defence-answer-input')?.value.trim();
     if (!answer) {
         showToast('Please type your explanation first.', 'warning');
         return;
@@ -461,7 +551,7 @@ async function submitDefenceAnswer() {
         showToast('Error submitting answer: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Submit Defence';
+        btn.innerHTML = 'Submit Defence Explanation';
     }
 }
 
@@ -572,7 +662,7 @@ function toggleBlindMode() {
 // ---------------------------------------------------------------------------
 
 async function loadRadarData() {
-    const dept = document.getElementById('radar-dept-select').value;
+    const dept = document.getElementById('radar-dept-select')?.value;
     const chartContainer = document.getElementById('radar-gaps-container');
     const funnelContainer = document.getElementById('radar-funnel-container');
 
@@ -687,7 +777,6 @@ function loadSmePreset(presetKey) {
     document.getElementById('sme-business').value = data.business;
     document.getElementById('sme-text').value = data.text;
     
-    // Set up audio player with preset audio file
     const audioPlayer = document.getElementById('sme-audio-player');
     const audioContainer = document.getElementById('sme-audio-player-container');
     if (audioPlayer && audioContainer) {
@@ -733,18 +822,16 @@ async function startAudioRecording() {
         Sabi.mediaRecorder.start(200);
         Sabi.isRecording = true;
 
-        // UI state update
         const recBtn = document.getElementById('btn-record-audio');
         recBtn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2 animate-pulse';
         recBtn.innerHTML = `<span>⏹️</span><span>Stop Recording (<span id="record-timer">00:00</span>)</span>`;
 
-        // Start SpeechRecognition if supported in browser
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             Sabi.speechRecognizer = new SpeechRecognition();
             Sabi.speechRecognizer.continuous = true;
             Sabi.speechRecognizer.interimResults = true;
-            Sabi.speechRecognizer.lang = 'en-NG'; // Nigerian English locale
+            Sabi.speechRecognizer.lang = 'en-NG';
 
             Sabi.speechRecognizer.onresult = (event) => {
                 let interim = '';
@@ -758,7 +845,6 @@ async function startAudioRecording() {
             Sabi.speechRecognizer.start();
         }
 
-        // Timer interval
         Sabi.recordSeconds = 0;
         Sabi.recordTimerInterval = setInterval(() => {
             Sabi.recordSeconds++;
@@ -792,7 +878,6 @@ function stopAudioRecording() {
     showToast('Voice note recorded! Ready to sanitise and extract.', 'success');
 }
 
-// Audio File Selection Handler
 function handleAudioFileSelected(files) {
     if (!files || files.length === 0) return;
     const file = files[0];
@@ -807,7 +892,6 @@ function handleAudioFileSelected(files) {
         document.getElementById('audio-source-label').innerText = `Uploaded Audio: ${file.name} (${Math.round(file.size / 1024)} KB)`;
     }
 
-    // Default contextual note if transcript is empty
     const currentText = document.getElementById('sme-text').value.trim();
     if (!currentText) {
         document.getElementById('sme-text').value = `Voice note uploaded: ${file.name}. Audio is loaded in the player.`;
@@ -817,9 +901,9 @@ function handleAudioFileSelected(files) {
 }
 
 async function processSmeBrief() {
-    const text = document.getElementById('sme-text').value.trim();
-    const alias = document.getElementById('sme-alias').value.trim() || 'SME_OWNER';
-    const business = document.getElementById('sme-business').value.trim() || 'Small Business';
+    const text = document.getElementById('sme-text')?.value.trim();
+    const alias = document.getElementById('sme-alias')?.value.trim() || 'SME_OWNER';
+    const business = document.getElementById('sme-business')?.value.trim() || 'Small Business';
 
     const btn = document.getElementById('btn-process-sme');
     btn.disabled = true;
@@ -828,7 +912,6 @@ async function processSmeBrief() {
     try {
         let res, briefData;
 
-        // If user recorded or uploaded an audio file, send to upload-audio endpoint
         if (Sabi.audioBlob && (Sabi.audioBlob instanceof Blob || Sabi.audioBlob instanceof File)) {
             const formData = new FormData();
             formData.append('audio', Sabi.audioBlob, Sabi.audioBlob.name || 'voice_note.webm');
@@ -847,7 +930,6 @@ async function processSmeBrief() {
                 document.getElementById('sme-audio-player-container').classList.remove('hidden');
             }
         } else {
-            // Text-only pipeline
             if (!text) {
                 showToast('Please record audio, upload an audio file, or enter transcript text first.', 'warning');
                 btn.disabled = false;
@@ -913,14 +995,14 @@ function renderSmeResult(brief) {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Load scenario metadata
-    loadScenarios();
+    const roleSelect = document.getElementById('plan-role');
+    const initialRole = roleSelect ? roleSelect.value : 'graduate_supply_chain_analyst';
+    Sabi.currentRole = initialRole;
 
-    // Initial solve for default planner view
+    // Immediately render UI synchronously
+    updateScenarioUI(initialRole);
     solvePlan();
 
-    // Role selector listener
-    const roleSelect = document.getElementById('plan-role');
     if (roleSelect) {
         roleSelect.addEventListener('change', (e) => {
             onRoleChange(e.target.value);

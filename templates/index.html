@@ -6,7 +6,7 @@
     <title>Sabi — Verified Graduate Capability Platform</title>
     <!-- Tailwind CSS (CDN for zero-build, ultra-fast setup) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/sabi.css">
+    <link rel="stylesheet" href="/static/sabi.css?v=2.6">
     <script>
         tailwind.config = {
             theme: {
@@ -131,8 +131,8 @@
                             <div>
                                 <label class="block font-semibold text-slate-700 mb-1">Target Role (Switches Day One Scenario)</label>
                                 <select id="plan-role" onchange="onRoleChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                                    <option value="junior_data_analyst" selected>Junior Data Analyst</option>
-                                    <option value="graduate_supply_chain_analyst">Graduate Supply-Chain Analyst</option>
+                                    <option value="graduate_supply_chain_analyst" selected>Graduate Supply-Chain Analyst</option>
+                                    <option value="junior_data_analyst">Junior Data Analyst</option>
                                     <option value="operations_associate">Operations Associate</option>
                                     <option value="financial_modelling_intern">Financial Modelling Intern</option>
                                 </select>
@@ -219,17 +219,17 @@
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div>
                                 <span id="scenario-badge" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                    DAY ONE: PRODUCT & CUSTOMER ANALYTICS
+                                    DAY ONE: SUPPLY CHAIN & LOGISTICS ANALYTICS
                                 </span>
                                 <h3 id="scenario-title" class="font-bold text-slate-900 text-base mt-1">
-                                    E-Commerce Customer Retention & Unit Economics Model
+                                    Apapa Port Landed-Cost Commercial Model
                                 </h3>
                             </div>
                             <span id="scenario-timebox" class="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-md">Timebox: 90 mins</span>
                         </div>
 
                         <p id="scenario-desc" class="text-xs text-slate-600 leading-relaxed">
-                            An online marketplace in Yaba, Lagos tracks customer acquisition, monthly recurring revenue (MRR), and cohort retention. You must build a dynamic model calculating Customer Lifetime Value (LTV), Customer Acquisition Cost (CAC) payback periods, and churn rates across 12 monthly cohorts. Your model must prove whether marketing spend is sustainable under churn stress.
+                            A container of 4 SKU lines has docked at Apapa Port. You must construct a clean, dynamic spreadsheet model converting USD purchase prices into Nigerian Naira (₦), applying the revised ECOWAS Common External Tariff, port handling surcharges, and demurrage penalties. Your formula graph must react correctly when commercial variables change.
                         </p>
 
                         <!-- Seed & Generator Form -->
@@ -256,7 +256,7 @@
                                     <p class="text-[11px] text-emerald-700">Contains domain parameters, raw records & formula targets</p>
                                 </div>
                             </div>
-                            <a id="pack-download-btn" href="/api/dayone/pack/1/download?role=junior_data_analyst" download class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition-colors flex items-center space-x-1">
+                            <a id="pack-download-btn" href="/api/dayone/pack/1/download?role=graduate_supply_chain_analyst" download class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition-colors flex items-center space-x-1">
                                 <span>Download Starter (.xlsx)</span>
                             </a>
                         </div>
@@ -265,7 +265,30 @@
                         <div class="space-y-1.5 pt-1">
                             <span class="font-semibold text-slate-700 text-xs block">6 Invariance Stress Tests for this Role:</span>
                             <div id="scenario-shocks-preview" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <!-- Populated dynamically by updateScenarioUI() -->
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#1</span>
+                                    <div><span class="font-bold block text-slate-800">FX Devaluation Shock</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">+25% NGN/USD exchange rate</span></div>
+                                </div>
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#2</span>
+                                    <div><span class="font-bold block text-slate-800">Customs Tariff Spike</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">+10% customs duty rate</span></div>
+                                </div>
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#3</span>
+                                    <div><span class="font-bold block text-slate-800">Port Demurrage</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">+5 demurrage days at Apapa terminal</span></div>
+                                </div>
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#4</span>
+                                    <div><span class="font-bold block text-slate-800">Ocean Freight Inflation</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">+30% shipping line surcharge</span></div>
+                                </div>
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#5</span>
+                                    <div><span class="font-bold block text-slate-800">Volume Discount Shock</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">-15% base supplier price</span></div>
+                                </div>
+                                <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                    <span class="text-emerald-700 font-black text-xs">#6</span>
+                                    <div><span class="font-bold block text-slate-800">Target Margin Shock</span><span class="text-slate-500 text-[10px] leading-tight block mt-0.5">Retail shelf margin raised from 35% to 40%</span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -648,10 +671,17 @@
         </div>
     </footer>
 
-    <!-- App Scripts -->
-    <script src="/static/sabi.js"></script>
+    <!-- App Scripts with cache-busting version query -->
+    <script src="/static/sabi.js?v=2.6"></script>
     <script>
-        loadSmePreset('adebayo');
+        // Ensure immediate role scenario synchronization
+        const roleEl = document.getElementById('plan-role');
+        if (roleEl && typeof updateScenarioUI === 'function') {
+            updateScenarioUI(roleEl.value);
+        }
+        if (typeof loadSmePreset === 'function') {
+            loadSmePreset('adebayo');
+        }
     </script>
 </body>
 </html>
