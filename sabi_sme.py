@@ -288,18 +288,70 @@ def extract_brief_mock(transcript: str) -> dict:
     }
 
 
+def extract_brief_llm(transcript: str, groq_key: Optional[str] = None) -> dict:
+    """Extract brief structure using Groq LLM (with heuristic fallback)."""
+    key = groq_key or os.environ.get("GROQ_API_KEY")
+    if not key:
+        return extract_brief_mock(transcript)
+
+    try:
+        from groq import Groq
+        client = Groq(api_key=key.strip())
+        prompt = f"""
+You are an expert commercial project manager analyzing a voice note from a Nigerian business owner.
+Extract structured project requirements as a clean JSON object with exact keys:
+problem_statement (string: concise summary of the core business problem),
+deliverables (list of 2-4 strings: concrete, actionable deliverables),
+acceptance_criteria (list of 2-3 strings: specific criteria to accept the work),
+data_needed (list of strings: specific business records/files needed from owner),
+privacy_risks (list of strings: privacy or data sensitivity risks),
+privacy_risk_level ("low", "medium", or "high"),
+effort_estimate ("small", "medium", or "large"),
+effort_days (integer: 3, 5, or 8),
+skill_tags (list of strings, e.g. EXCEL_MODELLING, DATA_CLEANING, VIZ_BASIC, REPORT_WRITING)
+
+Voice note transcript:
+\"\"\"{transcript}\"\"\"
+"""
+        resp = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.0
+        )
+        data = json.loads(resp.choices[0].message.content)
+        # Ensure required fields exist with valid defaults
+        if not data.get("problem_statement"):
+            data["problem_statement"] = transcript[:200]
+        if not data.get("deliverables"):
+            data["deliverables"] = ["Clean automated financial spreadsheet model"]
+        if not data.get("privacy_risk_level") in ["low", "medium", "high"]:
+            data["privacy_risk_level"] = "medium"
+        if not data.get("effort_estimate") in ["small", "medium", "large"]:
+            data["effort_estimate"] = "medium"
+        if not isinstance(data.get("effort_days"), int):
+            data["effort_days"] = 5
+        if not data.get("skill_tags"):
+            data["skill_tags"] = ["EXCEL_MODELLING", "DATA_CLEANING"]
+        return data
+    except Exception as e:
+        print(f"Groq LLM extraction notice (fallback to heuristic): {e}")
+        return extract_brief_mock(transcript)
+
+
 def process_voice_note(
     transcript: str,
     owner_alias: str = "SME_OWNER",
     business_type: str = "Small business",
+    groq_key: Optional[str] = None,
 ) -> SMEBrief:
     """Full pipeline: sanitise → extract → package as SMEBrief."""
 
     # Step 1: Sanitise PII
     sanitised, pii_matches = mask_pii(transcript)
 
-    # Step 2: Extract structured brief
-    extracted = extract_brief_mock(sanitised)
+    # Step 2: Extract structured brief (Groq LLM if key present, else deterministic mock)
+    extracted = extract_brief_llm(sanitised, groq_key=groq_key)
 
     # Step 3: Build the brief
     brief = SMEBrief(

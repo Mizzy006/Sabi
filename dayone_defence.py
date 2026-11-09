@@ -386,7 +386,9 @@ class LLMProvider:
 class GroqProvider(LLMProvider):
     """Groq cloud provider (Llama-3 / Mixtral)."""
 
-    def __init__(self, model: str = "llama-3.3-70b-versatile", api_key: str | None = None):
+    def __init__(self, model: str = "openai/gpt-oss-120b", api_key: str | None = None):
+        from dotenv import load_dotenv
+        load_dotenv()
         from groq import Groq
         self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
         self.model = model

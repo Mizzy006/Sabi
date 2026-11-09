@@ -11,6 +11,9 @@ Run:
 """
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import math
 import os
@@ -449,7 +452,8 @@ def defence_start(req: DefenceStartRequest):
             "question": def_info.get("question", "Walk me through how cell N6 computes key outputs."),
         }]
 
-    engine = DefenceEngine(get_provider("mock"))
+    provider_name = "groq" if os.environ.get("GROQ_API_KEY") else "mock"
+    engine = DefenceEngine(get_provider(provider_name))
     session = engine.build_session(req.student_id, req.seed, wb_path, qs)
 
     session_id = uuid.uuid4().hex[:12]
@@ -684,10 +688,12 @@ def clean_nigerian_transcript(text: str) -> str:
 def sme_process(req: SMEProcessRequest):
     """Mask Nigerian PII and extract structured project brief from text."""
     cleaned_text = clean_nigerian_transcript(req.text)
+    active_groq_key = os.environ.get("GROQ_API_KEY")
     brief = process_voice_note(
         cleaned_text,
         owner_alias=req.owner_alias,
         business_type=req.business_type,
+        groq_key=active_groq_key,
     )
     return brief.model_dump(mode="json")
 
@@ -713,8 +719,8 @@ async def sme_upload_audio(
     transcribed_text = transcript
     active_groq_key = groq_key or os.environ.get("GROQ_API_KEY")
 
-    # If Groq Whisper key is available, run high-precision speech-to-text directly on audio file
-    if active_groq_key and (not transcribed_text or len(transcribed_text.strip()) < 15):
+    # If Groq Whisper key is available, ALWAYS run high-precision Whisper directly on audio file
+    if active_groq_key:
         try:
             from groq import Groq
             client = Groq(api_key=active_groq_key.strip())
@@ -726,8 +732,8 @@ async def sme_upload_audio(
                     language="en",
                     temperature=0.0
                 )
-                if transcription.text and len(transcription.text.strip()) > 5:
-                    transcribed_text = transcription.text
+                if transcription.text and len(transcription.text.strip()) > 3:
+                    transcribed_text = transcription.text.strip()
         except Exception as e:
             print(f"Groq Whisper notice: {e}")
 
@@ -744,7 +750,7 @@ async def sme_upload_audio(
             f"Please deliver an automated model with summary charts within one week. Thank you."
         )
 
-    brief = process_voice_note(transcribed_text, owner_alias=owner_alias, business_type=business_type)
+    brief = process_voice_note(transcribed_text, owner_alias=owner_alias, business_type=business_type, groq_key=active_groq_key)
     return {
         "status": "success",
         "audio_url": f"/voice_notes/{safe_name}",
