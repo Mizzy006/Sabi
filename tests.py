@@ -511,4 +511,83 @@ class TestServer:
         assert data["task"]["title"] == "Flutterwave FX Arbitrage Settlement Model"
         assert data["task"]["company_name"] == "Flutterwave"
 
+    def test_student_curriculum_gap_text(self):
+        econ_syllabus = (
+            "ECO 101 Principles of Microeconomics\n"
+            "ECO 201 Quantitative Economics, regression and hypothesis testing\n"
+            "ECO 301 Econometrics and statistical inference\n"
+            "ECO 499 Academic thesis and research report"
+        )
+        res = self.client.post(
+            "/api/student/curriculum-gap",
+            data={
+                "curriculum_text": econ_syllabus,
+                "target_role": "graduate_supply_chain_analyst",
+                "student_alias": "Ada Okafor"
+            }
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["target_role"] == "graduate_supply_chain_analyst"
+        assert data["student_alias"] == "Ada Okafor"
+        assert 0 <= data["match_percentage"] <= 100
+        assert len(data["strong_areas"]) > 0
+        assert len(data["areas_to_work_on"]) > 0
+        assert "Apapa Port Landed-Cost Commercial Model" in data["recommended_bridge_scenario"]
+
+    def test_student_curriculum_gap_file(self):
+        file_content = b"CSC 301 Database Systems and SQL queries with table joins\nCSC 201 Python programming and data structures"
+        files = {"file": ("curriculum.txt", file_content, "text/plain")}
+        res = self.client.post(
+            "/api/student/curriculum-gap",
+            data={
+                "target_role": "junior_data_analyst",
+                "student_alias": "Emeka Obi"
+            },
+            files=files
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["target_role"] == "junior_data_analyst"
+        strong_ids = [s["skill_id"] for s in data["strong_areas"]]
+        assert any("SQL" in s or "PYTHON" in s for s in strong_ids)
+
+    def test_student_curriculum_gap_role_comparison(self):
+        syllabus = "CSC 301 Database Systems and relational SQL queries inner joins group by"
+        res_data = self.client.post(
+            "/api/student/curriculum-gap",
+            data={"curriculum_text": syllabus, "target_role": "junior_data_analyst"}
+        ).json()
+        res_ops = self.client.post(
+            "/api/student/curriculum-gap",
+            data={"curriculum_text": syllabus, "target_role": "operations_associate"}
+        ).json()
+        # SQL matches Junior Data Analyst much better than Operations Associate
+        assert res_data["match_percentage"] > res_ops["match_percentage"]
+
+
+# ─── sabi_curriculum ────────────────────────────────────────────────────────
+
+class TestCurriculumEngine:
+    def test_direct_curriculum_diagnose(self):
+        from sabi_curriculum import diagnose_curriculum_gap
+        result = diagnose_curriculum_gap(
+            curriculum_text="ECO 101 Microeconomics, ECO 301 Econometrics regression",
+            target_role="financial_modelling_intern",
+            student_alias="Zainab Bello"
+        )
+        assert result["status"] == "success"
+        assert "readiness_tier" in result
+        assert "cohort_percentile" in result
+        assert isinstance(result["strong_areas"], list)
+        assert isinstance(result["areas_to_work_on"], list)
+
+    def test_extract_text_from_file_bytes(self):
+        from sabi_curriculum import extract_text_from_file_bytes
+        text = extract_text_from_file_bytes(b"Sample course text in UTF-8", "test.txt")
+        assert "Sample course text" in text
+
+
 

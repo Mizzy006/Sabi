@@ -42,6 +42,7 @@ from sabi_radar import (
     generate_sample_postings, SAMPLE_COURSES, analyse_gaps,
     compute_funnel, SKILLS_TAXONOMY, format_heatmap,
 )
+from sabi_curriculum import diagnose_curriculum_gap, extract_text_from_file_bytes
 from sabi_sme import process_voice_note, SMEBrief
 from dayone_scenarios import SCENARIOS, get_scenario, write_scenario_pack
 
@@ -1001,6 +1002,45 @@ def create_employer_task(task_in: EmployerTaskCreate):
         "message": "Task published to student portal successfully!",
         "task": new_task
     }
+
+
+# ---------------------------------------------------------------------------
+# 9. Student Candidate Diagnostic & Curriculum Gap Analyzer
+# ---------------------------------------------------------------------------
+
+@app.post("/api/student/curriculum-gap")
+async def analyze_student_curriculum_gap(
+    curriculum_text: Optional[str] = Form(None),
+    target_role: str = Form("graduate_supply_chain_analyst"),
+    student_alias: str = Form("Ada Okafor"),
+    file: Optional[UploadFile] = File(None),
+    groq_key: Optional[str] = Form(None)
+):
+    """Dynamically analyze student syllabus / transcript against target job competencies."""
+    text_content = curriculum_text or ""
+    if file and file.filename:
+        file_bytes = await file.read()
+        file_extracted = extract_text_from_file_bytes(file_bytes, file.filename)
+        text_content = f"{text_content}\n{file_extracted}".strip()
+
+    if not text_content:
+        # Default fallback to realistic Nigerian Economics degree outline if blank
+        text_content = (
+            "Department of Economics\n"
+            "ECO 101: Principles of Economics (Descriptive statistics, supply/demand)\n"
+            "ECO 201: Quantitative Methods in Economics (Regression, hypothesis testing, Excel spreadsheet)\n"
+            "ECO 301: Econometrics I (Regression modelling, statistical inference, causal analysis)\n"
+            "ECO 401: Research Project (Empirical data collection, academic report writing, thesis defence)"
+        )
+
+    active_groq_key = groq_key or os.environ.get("GROQ_API_KEY")
+    result = diagnose_curriculum_gap(
+        curriculum_text=text_content,
+        target_role=target_role,
+        student_alias=student_alias,
+        groq_key=active_groq_key
+    )
+    return result
 
 
 # ---------------------------------------------------------------------------

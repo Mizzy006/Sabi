@@ -114,7 +114,9 @@ const Sabi = {
     speechRecognizer: null,
     isRecording: false,
     recordTimerInterval: null,
-    recordSeconds: 0
+    recordSeconds: 0,
+    curriculumSelectedFile: null,
+    curriculumGapData: null
 };
 
 // Toast notification helper
@@ -137,7 +139,7 @@ function switchTab(tabId) {
         showToast('Employer Portal Restricted: Sign in as an Employer to evaluate candidates or post tasks.', 'warning');
         return;
     }
-    if (userRole === 'employer' && ['student', 'employer-tasks'].includes(tabId)) {
+    if (userRole === 'employer' && ['student', 'employer-tasks', 'student-analytics'].includes(tabId)) {
         showToast('Student Portal: As an employer, manage tasks and candidate pipelines. Switch to Student to take tests.', 'info');
         return;
     }
@@ -171,6 +173,8 @@ function switchTab(tabId) {
         loadRadarData();
     } else if (tabId === 'employer-tasks' || tabId === 'sme') {
         loadEmployerTasks();
+    } else if (tabId === 'student-analytics') {
+        initCurriculumGapIfEmpty();
     }
 }
 
@@ -1267,7 +1271,7 @@ function route() {
     } else if (inApp) {
         if (!Sabi.currentUser) initAuth();
         const tab = h.split('/')[1];
-        if (['student', 'employer', 'radar', 'sme', 'employer-tasks'].includes(tab)) {
+        if (['student', 'employer', 'radar', 'sme', 'employer-tasks', 'student-analytics'].includes(tab)) {
             switchTab(tab);
         } else {
             // Default tab based on role
@@ -1414,6 +1418,10 @@ function setUserSession(user, saveToStorage = true) {
 
     if (nameEl) nameEl.innerText = user.name || 'User';
     if (aliasInput && user.role === 'student') aliasInput.value = user.alias || user.name || 'Ada Okafor';
+    const diagBadge = document.getElementById('curriculum-candidate-badge');
+    if (diagBadge && user.role === 'student') {
+        diagBadge.innerText = `${user.name || 'Candidate'} · ${user.university || 'Undergraduate'}`;
+    }
 
     if (roleBadge) {
         if (user.role === 'student') {
@@ -1443,7 +1451,7 @@ function applyPortalRole(role) {
     } else {
         studentElements.forEach(el => el.style.display = 'none');
         employerElements.forEach(el => el.style.display = '');
-        if (['student', 'employer-tasks'].includes(Sabi.activeTab)) {
+        if (['student', 'employer-tasks', 'student-analytics'].includes(Sabi.activeTab)) {
             switchTab('employer');
         }
     }
@@ -1678,3 +1686,320 @@ function toggleMode() {
 }
 
 document.addEventListener('DOMContentLoaded', syncModeSwitch);
+
+// ---------------------------------------------------------------------------
+// CANDIDATE DIAGNOSTIC & DYNAMIC CURRICULUM GAP ANALYZER (TestGorilla-Style)
+// ---------------------------------------------------------------------------
+
+const CURRICULUM_PRESETS = {
+    unilag_econ: {
+        role: "graduate_supply_chain_analyst",
+        degree: "UNILAG B.Sc. Economics",
+        badge: "Ada Okafor · UNILAG Economics",
+        text: `University of Lagos - Department of Economics
+Undergraduate Degree Course Curriculum:
+ECO 101: Principles of Economics I (Microeconomics, consumer choice, elasticity, supply and demand functions)
+ECO 102: Principles of Economics II (Macroeconomics, national income accounting, inflation, unemployment)
+ECO 201: Quantitative Methods in Economics (Calculus for economists, linear algebra, matrix operations)
+ECO 202: Economic Statistics & Data (Descriptive statistics, probability distributions, sampling techniques, index numbers)
+ECO 301: Econometrics I (Classical linear regression model, OLS estimation, hypothesis testing, t-tests, F-tests, multicollinearity)
+ECO 302: Econometrics II (Heteroskedasticity, autocorrelation, dummy variables, simultaneous equation models)
+ECO 401: Advanced Economic Theory (General equilibrium, welfare economics)
+ECO 499: Research Project / Undergraduate Dissertation (Empirical economic investigation, statistical analysis, academic report writing)`
+    },
+    ui_compsci: {
+        role: "junior_data_analyst",
+        degree: "UI B.Sc. Computer Science",
+        badge: "Emeka Obi · UI Computer Science",
+        text: `University of Ibadan - Department of Computer Science
+B.Sc. Degree Course Curriculum:
+CSC 101: Introduction to Computer Science & Problem Solving (Algorithms, flowcharts, pseudo-code)
+CSC 201: Computer Programming I (Python fundamentals, data types, control structures, functions)
+CSC 202: Computer Programming II (Object-oriented programming, data structures, linked lists, binary trees)
+CSC 301: Database Design & Management Systems (Relational databases, SQL queries, DDL/DML, normalization, table joins, aggregation)
+CSC 302: Data Structures & Algorithms (Sorting, searching, algorithmic complexity, Big-O notation)
+CSC 305: Operating Systems & System Programming
+CSC 401: Artificial Intelligence & Machine Learning (Supervised learning, classification, pandas preprocessing)
+CSC 499: Final Year Software Engineering Capstone (System implementation, technical documentation, oral defense)`
+    },
+    abu_accounting: {
+        role: "financial_modelling_intern",
+        degree: "ABU B.Sc. Accounting",
+        badge: "Zainab Bello · ABU Accounting",
+        text: `Ahmadu Bello University - Department of Accounting
+B.Sc. Accounting Syllabus:
+ACC 101: Introduction to Financial Accounting I (Double-entry bookkeeping, trial balance, ledger accounts)
+ACC 201: Financial Accounting II (Company accounts, partnership accounts, preparation of balance sheets and income statements)
+ACC 202: Cost Accounting (Cost classifications, absorption costing, marginal costing, break-even analysis)
+ACC 301: Management Accounting (Budgeting, budgetary control, standard costing, variance analysis)
+ACC 302: Auditing & Investigation (Audit standards, internal control systems, vouching, verification of assets)
+ACC 401: Advanced Financial Accounting (Group accounts, consolidated financial statements, IFRS compliance)
+ACC 402: Taxation & Tax Management (Company income tax, VAT, PAYE calculation)
+ACC 499: Research Project (Financial performance analysis, empirical accounting thesis)`
+    }
+};
+
+function initCurriculumGapIfEmpty() {
+    if (!Sabi.curriculumGapData) {
+        loadCurriculumPreset('unilag_econ');
+    }
+}
+
+function loadCurriculumPreset(key) {
+    const preset = CURRICULUM_PRESETS[key];
+    if (!preset) return;
+
+    const roleSelect = document.getElementById('curriculum-target-role');
+    const textArea = document.getElementById('curriculum-text-input');
+    const badgeEl = document.getElementById('curriculum-candidate-badge');
+
+    if (roleSelect) roleSelect.value = preset.role;
+    if (textArea) textArea.value = preset.text;
+    if (badgeEl) badgeEl.innerText = preset.badge;
+
+    clearCurriculumFile();
+    runCurriculumAnalysis();
+}
+
+function clearCurriculumInput() {
+    const textArea = document.getElementById('curriculum-text-input');
+    if (textArea) textArea.value = '';
+    clearCurriculumFile();
+    showToast('Curriculum input cleared.', 'info');
+}
+
+function handleCurriculumFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    Sabi.curriculumSelectedFile = file;
+    const nameEl = document.getElementById('curriculum-file-name');
+    const statusEl = document.getElementById('curriculum-file-status');
+    const dropzoneText = document.getElementById('curriculum-dropzone-text');
+
+    if (nameEl) nameEl.innerText = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+    if (statusEl) statusEl.classList.remove('hidden');
+    if (dropzoneText) dropzoneText.innerText = `Loaded: ${file.name}`;
+
+    showToast(`Loaded "${file.name}". Click 'Analyze Fit & Calculate Gap' to process.`, 'info');
+}
+
+function clearCurriculumFile() {
+    Sabi.curriculumSelectedFile = null;
+    const fileInput = document.getElementById('curriculum-file-input');
+    const statusEl = document.getElementById('curriculum-file-status');
+    const dropzoneText = document.getElementById('curriculum-dropzone-text');
+
+    if (fileInput) fileInput.value = '';
+    if (statusEl) statusEl.classList.add('hidden');
+    if (dropzoneText) dropzoneText.innerText = 'Click to browse or drop syllabus PDF';
+}
+
+function removeCurriculumFile(event) {
+    if (event) event.stopPropagation();
+    clearCurriculumFile();
+}
+
+function setupCurriculumDropzone() {
+    const dropzone = document.getElementById('curriculum-dropzone');
+    if (!dropzone) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('border-emerald-500', 'bg-emerald-50/50');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/50');
+        }, false);
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+            const fakeEvent = { target: { files: files } };
+            handleCurriculumFileSelected(fakeEvent);
+        }
+    }, false);
+}
+
+async function runCurriculumAnalysis() {
+    const roleSelect = document.getElementById('curriculum-target-role');
+    const textArea = document.getElementById('curriculum-text-input');
+    const btn = document.getElementById('btn-run-curriculum-analysis');
+    const descEl = document.getElementById('curriculum-role-desc');
+
+    const targetRole = roleSelect ? roleSelect.value : 'graduate_supply_chain_analyst';
+    const curriculumText = textArea ? textArea.value : '';
+    const studentAlias = Sabi.currentUser ? Sabi.currentUser.name : 'Ada Okafor';
+
+    const roleDescriptions = {
+        graduate_supply_chain_analyst: "Landed-cost modelling, ECOWAS tariff calculation, port demurrage mitigation, and FX sensitivity analysis.",
+        junior_data_analyst: "Customer cohort retention analysis, unit economics (LTV/CAC), and data pipeline cleaning.",
+        operations_associate: "Fleet dispatch haulage margins, liquidity balancing, and turnaround optimization.",
+        financial_modelling_intern: "13-week cashflow runway forecasting, working capital optimization, and credit risk stress-testing."
+    };
+    if (descEl) descEl.innerText = roleDescriptions[targetRole] || '';
+
+    const formData = new FormData();
+    formData.append('target_role', targetRole);
+    formData.append('student_alias', studentAlias);
+    if (curriculumText) formData.append('curriculum_text', curriculumText);
+    if (Sabi.curriculumSelectedFile) {
+        formData.append('file', Sabi.curriculumSelectedFile);
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Analyzing Curriculum...</span>';
+    }
+
+    try {
+        const res = await fetch('/api/student/curriculum-gap', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            Sabi.curriculumGapData = data;
+            renderCurriculumDiagnostic(data);
+            showToast(`Diagnostic calculated: ${data.match_percentage}% Match for ${data.target_role_title}`, 'success');
+        } else {
+            showToast('Diagnostic failed: ' + (data.detail || 'Server error'), 'error');
+        }
+    } catch (err) {
+        showToast('Error analyzing curriculum: ' + err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Analyze Fit &amp; Calculate Gap</span>';
+        }
+    }
+}
+
+function renderCurriculumDiagnostic(data) {
+    const scoreEl = document.getElementById('curriculum-match-score');
+    const barEl = document.getElementById('curriculum-match-bar');
+    const tierEl = document.getElementById('curriculum-readiness-tier');
+    const pctEl = document.getElementById('curriculum-cohort-percentile');
+    const bridgeEl = document.getElementById('curriculum-bridge-name');
+    const summaryEl = document.getElementById('curriculum-summary-box');
+
+    if (scoreEl) scoreEl.innerText = data.match_percentage;
+    if (barEl) {
+        barEl.style.width = `${data.match_percentage}%`;
+        if (data.match_percentage >= 75) {
+            barEl.className = 'h-full bg-emerald-600 transition-all duration-500';
+        } else if (data.match_percentage >= 50) {
+            barEl.className = 'h-full bg-teal-600 transition-all duration-500';
+        } else {
+            barEl.className = 'h-full bg-amber-500 transition-all duration-500';
+        }
+    }
+    if (tierEl) {
+        tierEl.innerHTML = `<span class="inline-flex items-center gap-1.5">${data.readiness_tier}</span>`;
+    }
+    if (pctEl) {
+        pctEl.innerText = `Top ${100 - data.cohort_percentile}% (${data.cohort_percentile}th Percentile)`;
+    }
+    if (bridgeEl) {
+        bridgeEl.innerText = data.recommended_bridge_scenario;
+    }
+    if (summaryEl) {
+        summaryEl.innerHTML = `<strong>Diagnostic Evaluation:</strong> ${data.summary}`;
+    }
+
+    const strongList = document.getElementById('curriculum-strong-list');
+    const strongCount = document.getElementById('curriculum-strong-count');
+    if (strongCount) strongCount.innerText = `${data.strong_areas.length} proficiencies`;
+
+    if (strongList) {
+        if (!data.strong_areas || data.strong_areas.length === 0) {
+            strongList.innerHTML = `<p class="text-xs text-slate-500 italic">No direct keyword matches found in submitted text. Try loading a degree preset.</p>`;
+        } else {
+            strongList.innerHTML = data.strong_areas.map(item => `
+                <div class="p-3 bg-white border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-slate-900 text-xs">${item.name}</span>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-wider">${item.category}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-1">${item.assessment}</p>
+                        </div>
+                        <span class="badge-student text-[11px] shrink-0 font-medium">${item.rating} · ${item.score_pct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2.5">
+                        <div class="h-full bg-emerald-600 rounded-full" style="width: ${item.score_pct}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    const deficitList = document.getElementById('curriculum-deficits-list');
+    const deficitCount = document.getElementById('curriculum-deficit-count');
+    if (deficitCount) deficitCount.innerText = `${data.areas_to_work_on.length} deficits`;
+
+    if (deficitList) {
+        if (!data.areas_to_work_on || data.areas_to_work_on.length === 0) {
+            deficitList.innerHTML = `<div class="p-4 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800">Complete curriculum coverage! No critical technical gaps identified for this role.</div>`;
+        } else {
+            deficitList.innerHTML = data.areas_to_work_on.map(item => {
+                const isCritical = item.severity === 'Critical Deficit';
+                const badgeStyle = isCritical
+                    ? 'background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;'
+                    : 'background:#fef3c7; color:#92400e; border:1px solid #fcd34d;';
+                return `
+                    <div class="p-3 bg-white border border-slate-200 rounded-lg hover:border-rose-300 transition-colors">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-slate-900 text-xs">${item.name}</span>
+                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider">${item.category}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600 mt-1">${item.gap_description}</p>
+                            </div>
+                            <span class="badge-student text-[10px] shrink-0 font-semibold" style="${badgeStyle}">
+                                ${item.severity}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
+                            <span class="text-[11px] text-slate-500">Bridge with: <strong>${item.bridge_scenario}</strong></span>
+                            <button type="button" onclick="startBridgeScenario('${data.target_role}')" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold inline-flex items-center gap-1">
+                                Solve Scenario &rarr;
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+}
+
+function startBridgeScenario(roleKey) {
+    const targetRole = roleKey || Sabi.curriculumGapData?.target_role || 'graduate_supply_chain_analyst';
+
+    switchTab('student');
+
+    if (typeof onRoleChange === 'function') {
+        onRoleChange(targetRole);
+    }
+
+    const targetEl = document.getElementById('scenario-card') || document.getElementById('tab-student');
+    if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    showToast(`Loaded Day One Scenario: ${targetRole.replace(/_/g, ' ')}. Prove your capability!`, 'info');
+}
+
+document.addEventListener('DOMContentLoaded', setupCurriculumDropzone);
+

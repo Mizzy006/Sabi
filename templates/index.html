@@ -408,6 +408,9 @@
                 <button id="nav-tab-student" class="tab-btn is-active student-only" role="tab" aria-selected="true" data-tab="student" onclick="switchTab('student')">
                     Day One Scenarios &amp; Defence
                 </button>
+                <button id="nav-tab-student-analytics" class="tab-btn student-only" role="tab" aria-selected="false" data-tab="student-analytics" onclick="switchTab('student-analytics')">
+                    Candidate Diagnostic &amp; Curriculum Gap
+                </button>
                 <button id="nav-tab-employer-tasks" class="tab-btn student-only" role="tab" aria-selected="false" data-tab="employer-tasks" onclick="switchTab('employer-tasks')">
                     Available Employer Tasks
                 </button>
@@ -776,6 +779,210 @@
 
                 </div>
             </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 1A: CANDIDATE DIAGNOSTIC & DYNAMIC CURRICULUM GAP ANALYZER -->
+        <!-- ================================================================= -->
+        <section id="tab-student-analytics" class="tab-panel hidden space-y-6">
+
+            <!-- Banner Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="badge-student">Candidate Diagnostic</span>
+                        <span class="text-xs text-slate-500 font-medium">TestGorilla-Style Benchmark &amp; Syllabus Gap</span>
+                    </div>
+                    <h2 class="text-xl font-semibold text-slate-900 mt-1">Skills Diagnostic &amp; Dynamic Curriculum Gap Analyzer</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Upload your university syllabus, course outline, or transcript. Compare what your degree actually covered against the commercial skills Nigerian employers demand.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="curriculum-candidate-badge" class="chip text-xs">Ada Okafor (UNILAG)</span>
+                    <button onclick="runCurriculumAnalysis()" class="btn btn-quiet btn-sm">
+                        Re-evaluate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configuration & Upload Card -->
+            <div class="panel space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    
+                    <!-- Left: Role & Presets (7 cols) -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5" for="curriculum-target-role">
+                                1. Target Commercial Role You Want
+                            </label>
+                            <select id="curriculum-target-role" class="input text-sm w-full font-medium" onchange="runCurriculumAnalysis()">
+                                <option value="graduate_supply_chain_analyst" selected>Graduate Supply-Chain Analyst · Apapa Port Landed-Cost &amp; Demurrage</option>
+                                <option value="junior_data_analyst">Junior Data Analyst · Customer Retention, Unit Economics &amp; SQL</option>
+                                <option value="operations_associate">Operations Associate · Haulage Margins &amp; Turnaround Optimization</option>
+                                <option value="financial_modelling_intern">Financial Modelling Intern · 13-Week Cashflow Runway &amp; Working Capital</option>
+                            </select>
+                            <p id="curriculum-role-desc" class="text-xs text-slate-500 mt-1">Landed-cost modelling, ECOWAS tariff calculation, port demurrage mitigation, and FX sensitivity analysis.</p>
+                        </div>
+
+                        <!-- 1-Click Degree Presets -->
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
+                                Quick Presets (Popular Nigerian Degrees):
+                            </span>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="loadCurriculumPreset('unilag_econ')" class="demo-chip text-xs">
+                                    <span>UNILAG B.Sc. Economics (Econometrics &amp; Stats)</span>
+                                </button>
+                                <button type="button" onclick="loadCurriculumPreset('ui_compsci')" class="demo-chip text-xs">
+                                    <span>UI B.Sc. Computer Science (Algorithms &amp; DB)</span>
+                                </button>
+                                <button type="button" onclick="loadCurriculumPreset('abu_accounting')" class="demo-chip text-xs">
+                                    <span>ABU B.Sc. Accounting (Ledger &amp; IFRS)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Coursework Textarea Input -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wide" for="curriculum-text-input">
+                                    2. Paste Course Outline, Codes, or Syllabus Excerpt
+                                </label>
+                                <button type="button" onclick="clearCurriculumInput()" class="text-xs text-slate-400 hover:text-slate-600">Clear</button>
+                            </div>
+                            <textarea id="curriculum-text-input" class="input font-mono text-xs w-full h-28" placeholder="Paste your university course codes, syllabus topics, or transcript modules here..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Right: File Dropzone (5 cols) -->
+                    <div class="lg:col-span-5 flex flex-col justify-between">
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
+                                Or Upload Syllabus / Transcript File (PDF / TXT)
+                            </span>
+                            <div id="curriculum-dropzone" class="border-2 border-dashed border-slate-300 rounded-lg p-5 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer flex flex-col items-center justify-center min-h-[140px]" onclick="document.getElementById('curriculum-file-input').click()">
+                                <input type="file" id="curriculum-file-input" class="hidden" accept=".pdf,.txt,.md,.doc,.docx" onchange="handleCurriculumFileSelected(event)">
+                                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mb-2 font-semibold text-sm">
+                                    PDF
+                                </div>
+                                <p class="text-xs font-medium text-slate-800" id="curriculum-dropzone-text">Click to browse or drop syllabus PDF</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Parsed dynamically with native PDF engine</p>
+                            </div>
+                            <div id="curriculum-file-status" class="hidden mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800 flex items-center justify-between">
+                                <span id="curriculum-file-name" class="truncate font-mono"></span>
+                                <button type="button" onclick="removeCurriculumFile(event)" class="text-slate-500 hover:text-rose-600 font-bold ml-2">x</button>
+                            </div>
+                        </div>
+
+                        <div class="pt-3">
+                            <button id="btn-run-curriculum-analysis" onclick="runCurriculumAnalysis()" class="btn btn-primary w-full py-2.5 text-sm font-semibold justify-center">
+                                <span>Analyze Fit &amp; Calculate Gap</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Dynamic Results Pane -->
+            <div id="curriculum-results-pane" class="space-y-6">
+                <!-- TestGorilla-Style Benchmark & Readiness Card -->
+                <div class="panel">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+                        <!-- Score Meter -->
+                        <div class="md:col-span-1 text-center md:text-left border-b md:border-b-0 md:border-r border-slate-200 pb-4 md:pb-0 md:pr-4">
+                            <span class="text-xs uppercase font-semibold text-slate-500 tracking-wider">Overall Match</span>
+                            <div class="flex items-baseline justify-center md:justify-start gap-1 mt-1">
+                                <span id="curriculum-match-score" class="text-4xl font-bold text-slate-900 tracking-tight">--</span>
+                                <span class="text-lg font-semibold text-slate-500">%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-2">
+                                <div id="curriculum-match-bar" class="h-full bg-emerald-600 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Readiness Tier -->
+                        <div class="md:col-span-1 text-center md:text-left border-b md:border-b-0 md:border-r border-slate-200 pb-4 md:pb-0 md:pr-4">
+                            <span class="text-xs uppercase font-semibold text-slate-500 tracking-wider">Readiness Tier</span>
+                            <div id="curriculum-readiness-tier" class="text-base font-semibold text-slate-800 mt-1">--</div>
+                            <p class="text-xs text-slate-500 mt-0.5">Competency classification</p>
+                        </div>
+
+                        <!-- Cohort Benchmark -->
+                        <div class="md:col-span-1 text-center md:text-left border-b md:border-b-0 md:border-r border-slate-200 pb-4 md:pb-0 md:pr-4">
+                            <span class="text-xs uppercase font-semibold text-slate-500 tracking-wider">Cohort Percentile</span>
+                            <div id="curriculum-cohort-percentile" class="text-base font-semibold text-slate-800 mt-1">--</div>
+                            <p class="text-xs text-slate-500 mt-0.5">Nigerian graduate benchmark</p>
+                        </div>
+
+                        <!-- Recommended Bridge -->
+                        <div class="md:col-span-1 text-center md:text-left">
+                            <span class="text-xs uppercase font-semibold text-slate-500 tracking-wider">Bridge Scenario</span>
+                            <div id="curriculum-bridge-name" class="text-xs font-semibold text-slate-900 mt-1 truncate" title="Day One Scenario">--</div>
+                            <button type="button" onclick="startBridgeScenario()" class="btn btn-primary btn-sm mt-2 w-full justify-center text-xs">
+                                Start Bridge Scenario
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Diagnostic Summary Alert -->
+                    <div id="curriculum-summary-box" class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700 leading-relaxed">
+                        Analyzing curriculum...
+                    </div>
+                </div>
+
+                <!-- Two-Column TestGorilla Diagnostic Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- Strong Areas Column -->
+                    <div class="panel space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                                <h3 class="font-semibold text-slate-900 text-sm">Strong Areas (Covered in Syllabus)</h3>
+                            </div>
+                            <span id="curriculum-strong-count" class="badge-student text-xs">0 proficiencies</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Skills demonstrated or grounded in your academic coursework and university syllabus.</p>
+                        
+                        <div id="curriculum-strong-list" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Areas to Work On Column -->
+                    <div class="panel space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                                <h3 class="font-semibold text-slate-900 text-sm">Areas to Work On (Curriculum Deficits)</h3>
+                            </div>
+                            <span id="curriculum-deficit-count" class="badge-employer text-xs" style="background:#fee2e2; color:#991b1b; border-color:#fca5a5;">0 deficits</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Commercial capabilities required by employers that are omitted from your submitted syllabus.</p>
+
+                        <div id="curriculum-deficits-list" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Remediation Action Plan Callout -->
+                <div class="panel panel-accent bg-emerald-50/30">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="max-w-2xl">
+                            <span class="chip text-xs font-semibold text-emerald-800 bg-white">48-Hour Remediation Pathway</span>
+                            <h4 class="text-sm font-semibold text-slate-900 mt-1">Turn your syllabus deficit into verified Day One evidence</h4>
+                            <p class="text-xs text-slate-600 mt-0.5">Employers in Lagos, Abuja and Port Harcourt do not penalize you for what your university didn't teach if you have proven you can do the job. Download our starter spreadsheet, wire dynamic formulas, and defend against Mrs. Bello's commercial shocks.</p>
+                        </div>
+                        <button onclick="startBridgeScenario()" class="btn btn-primary text-xs shrink-0">
+                            Launch Day One Defence
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
         </section>
 
         <!-- ================================================================= -->
