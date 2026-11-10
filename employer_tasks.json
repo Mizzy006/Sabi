@@ -1,5 +1,28 @@
 [
   {
+    "id": "task-emp-14a93f",
+    "title": "Flutterwave FX Arbitrage Settlement Model",
+    "company_name": "Flutterwave",
+    "role_track": "financial_modelling_intern",
+    "role_title": "Financial Modelling Intern",
+    "timebox_mins": 90,
+    "data_budget_mb": 50,
+    "problem_statement": "Cross-border payment corridors require dynamic hedging against Naira fluctuations.",
+    "deliverables": [
+      "FX hedging sensitivity table",
+      "Intraday settlement buffer calculation"
+    ],
+    "skill_tags": [
+      "FX Hedging",
+      "Treasury Operations",
+      "Dynamic Invariance"
+    ],
+    "posted_by": "Tunde Bakare (Flutterwave)",
+    "posted_date": "2026-11-10",
+    "applicants_count": 0,
+    "status": "Active"
+  },
+  {
     "id": "task-emp-ee151f",
     "title": "Flutterwave FX Arbitrage Settlement Model",
     "company_name": "Flutterwave",

@@ -1308,6 +1308,27 @@ function initAuth() {
     setUserSession(saved, false);
 }
 
+function toggleDemoMenu(force) {
+    const menu = document.getElementById('auth-demo-menu');
+    if (!menu) return;
+    if (typeof force === 'boolean') {
+        menu.classList.toggle('hidden', !force);
+    } else {
+        menu.classList.toggle('hidden');
+    }
+}
+
+// Close demo dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const btn = document.getElementById('btn-auth-demo-menu');
+    const menu = document.getElementById('auth-demo-menu');
+    if (menu && !menu.classList.contains('hidden')) {
+        if (btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    }
+});
+
 function switchAuthMode(role) {
     const studentTab = document.getElementById('auth-tab-student');
     const employerTab = document.getElementById('auth-tab-employer');
@@ -1492,7 +1513,7 @@ function renderStudentEmployerTasks() {
                     ${(task.skill_tags || []).map(s => `<span class="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded font-medium">${s}</span>`).join('')}
                 </div>
                 <button type="button" onclick="takeEmployerChallenge('${task.id}', '${task.role_track}')" class="btn btn-primary btn-sm w-full font-semibold">
-                    ⚡ Take on This Challenge
+                    Take on this challenge →
                 </button>
             </div>
         </div>
@@ -1586,7 +1607,7 @@ async function publishExtractedBriefAsTask() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>🚀 Publish to Student Portal</span>';
+            btn.innerHTML = '<span>Publish to Student Portal</span>';
         }
     }
 }
