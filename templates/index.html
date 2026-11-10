@@ -50,11 +50,12 @@
                 <span class="brand-mark" aria-hidden="true">S</span>
                 <span class="text-lg font-semibold">Sabi</span>
             </a>
-            <nav class="flex items-center gap-6 text-sm">
+            <nav class="flex items-center gap-5 text-sm">
                 <a href="#what" class="hidden sm:inline text-slate-600 hover:text-slate-900">What it does</a>
                 <a href="#how" class="hidden sm:inline text-slate-600 hover:text-slate-900">How it works</a>
                 <button type="button" class="mode-switch" role="switch" aria-checked="false" aria-label="Data saver" onclick="toggleMode()" title="Data saver loads fewer files and uses less data"><span class="mode-track"><i></i></span><span class="mode-label">Data saver</span></button>
-                <a href="#app" class="btn btn-primary btn-sm">Open the platform</a>
+                <a href="#login/student" class="text-emerald-800 font-semibold hover:text-emerald-950">Student Login</a>
+                <a href="#login/employer" class="btn btn-primary btn-sm">Employer Portal</a>
             </nav>
         </div>
     </header>
@@ -65,7 +66,8 @@
                 <h1 class="lp-title">Proof of what graduates can actually do</h1>
                 <p class="lp-lead">Sabi gives graduates a real task for the job they want, stress-tests their work, and issues a signed record that employers can trust.</p>
                 <div class="flex flex-wrap gap-3 mt-8">
-                    <a href="#app" class="btn btn-primary">Open the platform</a>
+                    <a href="#login/student" class="btn btn-primary">Enter as Student</a>
+                    <a href="#login/employer" class="btn btn-dark">Enter as Employer</a>
                     <a href="#how" class="btn btn-quiet">See how it works</a>
                 </div>
                 <div class="lp-roles">
@@ -109,7 +111,7 @@
                         <div class="vis-row"><span>Weekly data budget</span><span class="meter"><i style="width:21%"></i></span><b>500 MB</b></div>
                         <div class="vis-row"><span>Plan length</span><span class="meter"><i style="width:50%"></i></span><b>6 weeks</b></div>
                     </div>
-                    <a class="lp-link" href="#app/student">Open student portal</a>
+                    <a class="lp-link" href="#login/student">Open student portal</a>
                 </article>
                 <article class="tile tile-b">
                     <span class="tile-ico"><svg class="ico"><use href="#i-brief"/></svg></span>
@@ -119,7 +121,7 @@
                         <div class="cand"><span class="avatar"></span><span class="skel" style="width:55%"></span><span class="level">Working</span></div>
                         <div class="cand"><span class="avatar"></span><span class="skel" style="width:42%"></span><span class="level">Working</span></div>
                     </div>
-                    <a class="lp-link" href="#app/employer">Open employer pipeline</a>
+                    <a class="lp-link" href="#login/employer">Open employer pipeline</a>
                 </article>
                 <article class="tile tile-c">
                     <span class="tile-ico"><svg class="ico"><use href="#i-chart"/></svg></span>
@@ -131,7 +133,7 @@
                         <div class="gap-row"><span>Supply chain</span><span class="meter"><i style="width:63%"></i></span><span class="meter alt"><i style="width:22%"></i></span></div>
                         <p class="vis-key"><i></i>Employer demand<i class="alt"></i>Syllabus coverage</p>
                     </div>
-                    <a class="lp-link" href="#app/radar">Open radar analytics</a>
+                    <a class="lp-link" href="#login/employer">Open radar analytics</a>
                 </article>
                 <article class="tile tile-d">
                     <span class="tile-ico"><svg class="ico"><use href="#i-mic"/></svg></span>
@@ -141,7 +143,7 @@
                         <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
                         <div class="flex flex-wrap gap-2"><span class="chip">Phone numbers hidden</span><span class="chip">Names hidden</span></div>
                     </div>
-                    <a class="lp-link" href="#app/sme">Open SME rails</a>
+                    <a class="lp-link" href="#login/employer">Open SME rails</a>
                 </article>
             </div>
         </div>
@@ -191,12 +193,162 @@
         <div class="lp-wrap lp-foot-row">
             <p><b>Sabi</b> &nbsp;Verified graduate capability platform</p>
             <nav class="flex flex-wrap gap-5">
-                <a href="#app/student">Students</a><a href="#app/employer">Employers</a><a href="#app/radar">Universities</a><a href="#app/sme">Small businesses</a>
+                <a href="#login/student">Students</a><a href="#login/employer">Employers</a><a href="#login/employer">Universities</a><a href="#login/employer">Small businesses</a>
             </nav>
         </div>
     </footer>
 </div>
 
+<!-- ================================================================= -->
+<!-- VIEW: AUTHENTICATION / DEDICATED PORTAL LOGIN -->
+<!-- ================================================================= -->
+<div id="view-auth" class="hidden min-h-screen flex flex-col justify-between bg-slate-50">
+    <header class="bg-white border-b border-slate-200 py-3.5 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3" aria-label="Back to overview">
+                <span class="brand-mark" aria-hidden="true">S</span>
+                <div>
+                    <span class="block text-lg font-semibold leading-tight">Sabi</span>
+                    <span class="block text-xs text-slate-500">Verified graduate capability platform</span>
+                </div>
+            </a>
+            <div class="flex items-center gap-4 text-sm">
+                <button type="button" class="mode-switch" role="switch" aria-checked="false" aria-label="Data saver" onclick="toggleMode()"><span class="mode-track"><i></i></span><span class="mode-label">Data saver</span></button>
+                <a href="#" class="text-slate-600 hover:text-slate-900 font-medium text-xs flex items-center gap-1">
+                    <span>←</span><span>Back to Overview</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-wrap flex-1 flex flex-col justify-center py-8">
+        <!-- Portal Selector Switcher Tabs -->
+        <div class="portal-tabs" role="tablist" aria-label="Portal selection">
+            <button id="auth-tab-student" type="button" class="portal-tab-btn is-active" onclick="switchAuthMode('student')">
+                <span class="block text-base font-semibold">🎓 Student Portal</span>
+                <span class="block text-xs text-slate-500 mt-0.5">Solve tasks &amp; prove capability</span>
+            </button>
+            <button id="auth-tab-employer" type="button" class="portal-tab-btn" onclick="switchAuthMode('employer')">
+                <span class="block text-base font-semibold">🏢 Employer Portal</span>
+                <span class="block text-xs text-slate-500 mt-0.5">Evaluate talent &amp; post briefs</span>
+            </button>
+        </div>
+
+        <!-- Student Login Card -->
+        <div id="auth-card-student" class="panel space-y-5">
+            <div class="border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between">
+                    <span class="badge-student">Student / Graduate Candidate Gateway</span>
+                    <span class="text-xs text-slate-400">Step 1 of 1</span>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900 mt-1.5">Sign in to Student Portal</h2>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Practice Day One commercial scenarios, stress-test your spreadsheet models against 6 business shocks, defend your formulas with Mrs. Bello viva-voce, and optimize your study hours.
+                </p>
+            </div>
+
+            <!-- Quick Demo Profiles for Students -->
+            <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-3 space-y-2">
+                <span class="text-xs font-semibold text-emerald-950 block">⚡ Instant 1-Click Demo Profiles (No Typing Required):</span>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="loginQuick('ada@unilag.edu.ng', 'student')" class="demo-chip border-emerald-300 hover:bg-emerald-100/60">
+                        <span class="font-semibold text-emerald-900">Ada Okafor</span>
+                        <span class="text-slate-500 text-xs">· UNILAG Econ (Working)</span>
+                    </button>
+                    <button type="button" onclick="loginQuick('emeka@ui.edu.ng', 'student')" class="demo-chip border-emerald-300 hover:bg-emerald-100/60">
+                        <span class="font-semibold text-emerald-900">Emeka Obi</span>
+                        <span class="text-slate-500 text-xs">· UI CompSci (Emerging)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Standard Form -->
+            <form onsubmit="handleAuthSubmit(event, 'student')" class="space-y-3.5 text-xs">
+                <div>
+                    <label for="auth-student-email" class="block font-semibold text-slate-700 mb-1">Student / University Email</label>
+                    <input id="auth-student-email" type="email" required placeholder="e.g. ada.okafor@unilag.edu.ng" class="field w-full" value="ada@unilag.edu.ng">
+                </div>
+                <div>
+                    <label for="auth-student-name" class="block font-semibold text-slate-700 mb-1">Full Name or Alias (For Verified Evidence)</label>
+                    <input id="auth-student-name" type="text" placeholder="Ada Okafor" class="field w-full" value="Ada Okafor">
+                </div>
+                <div>
+                    <label for="auth-student-password" class="block font-semibold text-slate-700 mb-1">Password</label>
+                    <input id="auth-student-password" type="password" value="demo123" class="field w-full">
+                </div>
+                <button type="submit" class="btn btn-primary w-full py-2.5 font-semibold text-sm">
+                    Enter Student Portal →
+                </button>
+            </form>
+
+            <div class="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+                Are you an employer, hiring manager, or SME owner?
+                <button type="button" onclick="switchAuthMode('employer')" class="font-semibold text-emerald-800 hover:underline ml-1">Switch to Employer Portal →</button>
+            </div>
+        </div>
+
+        <!-- Employer Login Card -->
+        <div id="auth-card-employer" class="panel space-y-5 hidden">
+            <div class="border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between">
+                    <span class="badge-employer">Hiring Team &amp; SME Partner Gateway</span>
+                    <span class="text-xs text-slate-400">Step 1 of 1</span>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-900 mt-1.5">Sign in to Employer Portal</h2>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Evaluate blind, pedigree-stripped candidate submissions, publish real business challenges for graduates, and convert SME voice notes into structured project briefs.
+                </p>
+            </div>
+
+            <!-- Quick Demo Profiles for Employers -->
+            <div class="bg-purple-50/70 border border-purple-200 rounded-lg p-3 space-y-2">
+                <span class="text-xs font-semibold text-purple-950 block">⚡ Instant 1-Click Demo Profiles (No Typing Required):</span>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="loginQuick('kemi@moniepoint.com', 'employer')" class="demo-chip border-purple-300 hover:bg-purple-100/60">
+                        <span class="font-semibold text-purple-950">Kemi Adebayo</span>
+                        <span class="text-slate-500 text-xs">· Moniepoint People Ops</span>
+                    </button>
+                    <button type="button" onclick="loginQuick('tunde@flutterwave.com', 'employer')" class="demo-chip border-purple-300 hover:bg-purple-100/60">
+                        <span class="font-semibold text-purple-950">Tunde Bakare</span>
+                        <span class="text-slate-500 text-xs">· Flutterwave Talent Lead</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Employer Standard Form -->
+            <form onsubmit="handleAuthSubmit(event, 'employer')" class="space-y-3.5 text-xs">
+                <div>
+                    <label for="auth-employer-email" class="block font-semibold text-slate-700 mb-1">Work / Corporate Email</label>
+                    <input id="auth-employer-email" type="email" required placeholder="e.g. kemi@moniepoint.com" class="field w-full" value="kemi@moniepoint.com">
+                </div>
+                <div>
+                    <label for="auth-employer-org" class="block font-semibold text-slate-700 mb-1">Company / Organization Name</label>
+                    <input id="auth-employer-org" type="text" placeholder="Moniepoint" class="field w-full" value="Moniepoint">
+                </div>
+                <div>
+                    <label for="auth-employer-password" class="block font-semibold text-slate-700 mb-1">Password</label>
+                    <input id="auth-employer-password" type="password" value="demo123" class="field w-full">
+                </div>
+                <button type="submit" class="btn btn-dark w-full py-2.5 font-semibold text-sm">
+                    Enter Employer Portal →
+                </button>
+            </form>
+
+            <div class="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+                Are you a student or graduate looking to take on tasks?
+                <button type="button" onclick="switchAuthMode('student')" class="font-semibold text-emerald-800 hover:underline ml-1">Switch to Student Portal →</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+        <p>Sabi &nbsp;·&nbsp; Code decides, the LLM narrates. &nbsp;·&nbsp; Verified Graduate Capability Platform</p>
+    </footer>
+</div>
+
+<!-- ================================================================= -->
+<!-- VIEW: APPLICATION WORKSPACE (ROLE-SCOPED) -->
+<!-- ================================================================= -->
 <div id="view-app" class="hidden">
     <header class="site-header">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,18 +360,40 @@
                         <span class="block text-xs text-slate-500">Verified graduate capability platform</span>
                     </div>
                 </a>
-                <div class="flex items-center gap-5 text-sm text-slate-600">
+                <div class="flex items-center gap-4 text-sm text-slate-600">
+                    <!-- User Identity Badge -->
+                    <div id="auth-user-badge" class="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200 text-xs shadow-sm">
+                        <span id="auth-user-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span id="auth-user-name" class="font-semibold text-slate-800">Ada Okafor</span>
+                        <span id="auth-user-role-badge" class="badge-student">Student</span>
+                    </div>
+                    <!-- Switch Portal / Logout -->
+                    <button type="button" onclick="logout()" class="btn btn-quiet btn-sm text-xs font-medium" title="Switch between Student and Employer portals">
+                        Switch Portal
+                    </button>
                     <button type="button" class="mode-switch" role="switch" aria-checked="false" aria-label="Data saver" onclick="toggleMode()" title="Data saver loads fewer files and uses less data"><span class="mode-track"><i></i></span><span class="mode-label">Data saver</span></button>
-                    <span class="hidden md:inline-flex items-center gap-2"><span class="status-dot"></span>API online</span>
-                    <a href="#how" class="hidden md:inline font-medium text-slate-700 hover:text-emerald-800 underline underline-offset-4 decoration-slate-300">How to use</a>
-                    <a href="/docs" target="_blank" rel="noopener" class="hidden md:inline font-medium text-slate-700 hover:text-emerald-800 underline underline-offset-4 decoration-slate-300">API docs</a>
                 </div>
             </div>
+            <!-- Role-Scoped Navigation Tabs -->
             <nav class="tabs" role="tablist" aria-label="Portals">
-                <button class="tab-btn is-active" role="tab" aria-selected="true" data-tab="student" onclick="switchTab('student')">Student portal</button>
-                <button class="tab-btn" role="tab" aria-selected="false" data-tab="employer" onclick="switchTab('employer')">Employer pipeline</button>
-                <button class="tab-btn" role="tab" aria-selected="false" data-tab="radar" onclick="switchTab('radar')">Radar analytics</button>
-                <button class="tab-btn" role="tab" aria-selected="false" data-tab="sme" onclick="switchTab('sme')">SME rails</button>
+                <!-- STUDENT TABS (Visible when logged in as Student) -->
+                <button id="nav-tab-student" class="tab-btn is-active student-only" role="tab" aria-selected="true" data-tab="student" onclick="switchTab('student')">
+                    Day One Scenarios &amp; Defence
+                </button>
+                <button id="nav-tab-employer-tasks" class="tab-btn student-only" role="tab" aria-selected="false" data-tab="employer-tasks" onclick="switchTab('employer-tasks')">
+                    Available Employer Tasks
+                </button>
+
+                <!-- EMPLOYER TABS (Visible when logged in as Employer) -->
+                <button id="nav-tab-employer" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="employer" onclick="switchTab('employer')">
+                    Candidate Pipeline
+                </button>
+                <button id="nav-tab-sme" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="sme" onclick="switchTab('sme')">
+                    Post Tasks &amp; SME Rails
+                </button>
+                <button id="nav-tab-radar" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="radar" onclick="switchTab('radar')">
+                    Radar Talent Analytics
+                </button>
             </nav>
         </div>
     </header>
@@ -577,6 +751,42 @@
         </section>
 
         <!-- ================================================================= -->
+        <!-- TAB 1B: AVAILABLE EMPLOYER TASKS (FOR STUDENTS) -->
+        <!-- ================================================================= -->
+        <section id="tab-employer-tasks" class="tab-panel hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="badge-student">Live Hiring Challenges</span>
+                        <span class="text-xs text-slate-500">Curated &amp; Verified</span>
+                    </div>
+                    <h2 class="text-xl font-semibold text-slate-900 mt-1">Real-World Tasks Posted by Employers &amp; SMEs</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Solve actual business briefs from Nigerian companies like Moniepoint, Flutterwave, and Alaba trade merchants to earn direct interview fast-tracks.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="loadEmployerTasks()" class="btn btn-quiet btn-sm">
+                        Refresh Tasks
+                    </button>
+                </div>
+            </div>
+
+            <!-- Track Filter Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-600 mr-1">Filter track:</span>
+                <button type="button" onclick="filterEmployerTasks('all', this)" class="role-pill is-active py-1 px-3 text-xs">All Tracks</button>
+                <button type="button" onclick="filterEmployerTasks('operations_associate', this)" class="role-pill py-1 px-3 text-xs">Operations</button>
+                <button type="button" onclick="filterEmployerTasks('graduate_supply_chain_analyst', this)" class="role-pill py-1 px-3 text-xs">Supply Chain</button>
+                <button type="button" onclick="filterEmployerTasks('junior_data_analyst', this)" class="role-pill py-1 px-3 text-xs">Data Analyst</button>
+                <button type="button" onclick="filterEmployerTasks('financial_modelling_intern', this)" class="role-pill py-1 px-3 text-xs">Financial Modelling</button>
+            </div>
+
+            <!-- Task Cards Grid -->
+            <div id="student-employer-tasks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Dynamically populated by loadEmployerTasks() -->
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
         <!-- TAB 2: EMPLOYER PORTAL -->
         <!-- ================================================================= -->
         <section id="tab-employer" class="tab-panel hidden space-y-6">
@@ -791,6 +1001,14 @@
                                         <div id="sme-skill-tags" class="flex flex-wrap gap-1 mt-1"></div>
                                     </div>
                                 </div>
+
+                                <!-- Publish Action Button -->
+                                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                                    <span class="text-xs text-slate-500">Ready to publish this extracted brief?</span>
+                                    <button id="btn-publish-extracted-task" type="button" onclick="publishExtractedBriefAsTask()" class="btn btn-primary btn-sm flex items-center gap-1.5">
+                                        <span>🚀 Publish to Student Portal</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -799,6 +1017,70 @@
                     <!-- Placeholder when not yet extracted -->
                     <div id="sme-placeholder" class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400 text-xs">
                         Record your voice note or upload an audio file on the left to extract the structured project brief and mask sensitive Nigerian PII.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employer Direct Task Creator & Active Tasks List -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 border-t border-slate-200">
+                <!-- Manual Challenge Creator (5 cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="panel space-y-4">
+                        <div class="border-b border-slate-100 pb-2">
+                            <span class="badge-employer">Direct Creator</span>
+                            <h3 class="font-semibold text-slate-900 text-sm mt-1">Post a New Business Challenge</h3>
+                            <p class="text-xs text-slate-500">Post a real operational problem for graduate applicants to solve.</p>
+                        </div>
+                        <form onsubmit="handleManualTaskSubmit(event)" class="space-y-3 text-xs">
+                            <div>
+                                <label for="emp-task-title" class="block font-semibold text-slate-700 mb-1">Task Title</label>
+                                <input id="emp-task-title" type="text" required placeholder="e.g. Flutterwave Settlement Margin Reconciliation" class="field w-full">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label for="emp-task-track" class="block font-semibold text-slate-700 mb-1">Role Track</label>
+                                    <select id="emp-task-track" class="field w-full">
+                                        <option value="operations_associate">Operations Associate</option>
+                                        <option value="graduate_supply_chain_analyst">Graduate Supply-Chain Analyst</option>
+                                        <option value="junior_data_analyst">Junior Data Analyst</option>
+                                        <option value="financial_modelling_intern">Financial Modelling Intern</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="emp-task-timebox" class="block font-semibold text-slate-700 mb-1">Timebox (Mins)</label>
+                                    <input id="emp-task-timebox" type="number" value="90" min="30" max="360" class="field w-full font-mono">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="emp-task-problem" class="block font-semibold text-slate-700 mb-1">Problem Statement</label>
+                                <textarea id="emp-task-problem" rows="3" required placeholder="Describe the commercial problem and the dynamic variables the model must solve..." class="field w-full"></textarea>
+                            </div>
+                            <div>
+                                <label for="emp-task-deliverables" class="block font-semibold text-slate-700 mb-1">Deliverables (One per line)</label>
+                                <textarea id="emp-task-deliverables" rows="3" required placeholder="Dynamic scenario model with FX sensitivity table&#10;Summary cashflow charts&#10;Invariance stress checks" class="field w-full"></textarea>
+                            </div>
+                            <div>
+                                <label for="emp-task-skills" class="block font-semibold text-slate-700 mb-1">Required Skills (Comma separated)</label>
+                                <input id="emp-task-skills" type="text" placeholder="Scenario Modelling, Dynamic Sensitivity, Excel Invariance" class="field w-full" value="Scenario Modelling, Dynamic Sensitivity, Excel Invariance">
+                            </div>
+                            <button type="submit" id="btn-create-manual-task" class="btn btn-dark w-full py-2 font-semibold">
+                                Publish Task to Student Portal →
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Active Employer Tasks Grid (7 cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="flex items-center justify-between pb-1">
+                        <div>
+                            <h3 class="font-semibold text-slate-900 text-sm">Your Published Tasks &amp; Challenges</h3>
+                            <p class="text-xs text-slate-500">Live challenges currently available to candidates in the student portal.</p>
+                        </div>
+                        <button type="button" onclick="loadEmployerTasks()" class="btn btn-quiet btn-sm">Refresh</button>
+                    </div>
+                    <div id="employer-active-tasks-grid" class="space-y-3">
+                        <!-- Populated by loadEmployerTasks() -->
                     </div>
                 </div>
             </div>

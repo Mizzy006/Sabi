@@ -24,7 +24,7 @@ import tempfile
 import uuid
 import wave
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -244,6 +244,27 @@ class SMEProcessRequest(BaseModel):
     text: str
     owner_alias: str = "SME_OWNER"
     business_type: str = "Small business"
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: Optional[str] = "password"
+    role: Optional[str] = "student"  # "student" or "employer"
+    name: Optional[str] = None
+    organization: Optional[str] = None
+
+
+class EmployerTaskCreate(BaseModel):
+    title: str
+    role_track: str
+    company_name: str
+    timebox_mins: int = 90
+    data_budget_mb: int = 50
+    problem_statement: str
+    deliverables: List[str]
+    skill_tags: List[str]
+    posted_by: str = "Hiring Partner"
+    effort_estimate: Optional[str] = "3-5 days"
 
 
 # ---------------------------------------------------------------------------
@@ -758,6 +779,227 @@ async def sme_upload_audio(
         "filesize_bytes": len(content),
         "transcript": transcribed_text,
         "brief": brief.model_dump(mode="json"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# 8. Authentication & Portal Role Separation
+# ---------------------------------------------------------------------------
+
+DEMO_USERS: List[Dict[str, Any]] = [
+    {
+        "id": "usr_ada_001",
+        "email": "ada@unilag.edu.ng",
+        "role": "student",
+        "name": "Ada Okafor",
+        "organization": "University of Lagos",
+        "department": "Economics",
+        "level": "Working",
+        "verified_tasks_count": 2,
+        "alias": "Ada Okafor"
+    },
+    {
+        "id": "usr_emeka_002",
+        "email": "emeka@ui.edu.ng",
+        "role": "student",
+        "name": "Emeka Obi",
+        "organization": "University of Ibadan",
+        "department": "Computer Science",
+        "level": "Emerging",
+        "verified_tasks_count": 1,
+        "alias": "Emeka Obi"
+    },
+    {
+        "id": "usr_kemi_003",
+        "email": "kemi@moniepoint.com",
+        "role": "employer",
+        "name": "Kemi Adebayo",
+        "organization": "Moniepoint",
+        "title": "Lead Talent Partner",
+        "posted_tasks_count": 2
+    },
+    {
+        "id": "usr_tunde_004",
+        "email": "tunde@flutterwave.com",
+        "role": "employer",
+        "name": "Tunde Bakare",
+        "organization": "Flutterwave",
+        "title": "VP People Operations",
+        "posted_tasks_count": 1
+    }
+]
+
+EMPLOYER_TASKS_FILE = os.path.join(BASE_DIR, "employer_tasks.json")
+
+DEFAULT_EMPLOYER_TASKS: List[Dict[str, Any]] = [
+    {
+        "id": "task-emp-001",
+        "title": "Moniepoint POS Float Rebalance & Settlement Model",
+        "company_name": "Moniepoint",
+        "role_track": "operations_associate",
+        "role_title": "Operations Associate",
+        "timebox_mins": 90,
+        "data_budget_mb": 45,
+        "problem_statement": "Agency banking aggregators in Ikeja and Alaba experience uneven terminal liquidity during weekend commercial peaks. Construct an automated dispatch rebalancing model to minimize cashout failure rates while limiting cash-in-transit demurrage.",
+        "deliverables": [
+            "Dynamic terminal cashout prediction formula based on 30-day velocity",
+            "Optimal float allocation matrix across 25 high-volume agency nodes",
+            "Liquidity stress sensitivity table reflecting 35% weekend cashout surge"
+        ],
+        "skill_tags": ["Liquidity Modelling", "Haulage Fleet Dispatch", "Scenario Analysis", "Excel Sensitivity Tables"],
+        "posted_by": "Kemi Adebayo (Moniepoint)",
+        "posted_date": "2026-11-08",
+        "applicants_count": 14,
+        "status": "Active"
+    },
+    {
+        "id": "task-emp-002",
+        "title": "Alaba Market Electronics Import Demurrage Shield",
+        "company_name": "Alaba Trade Logistics (SME)",
+        "role_track": "graduate_supply_chain_analyst",
+        "role_title": "Graduate Supply-Chain Analyst",
+        "timebox_mins": 90,
+        "data_budget_mb": 50,
+        "problem_statement": "Electronics importers docking at Apapa Port face fluctuating tariff surcharges and compounding demurrage penalties after 5 free days. Construct a dynamic spreadsheet model linking USD purchasing prices to landed Naira costs per carton under FX shock.",
+        "deliverables": [
+            "Multi-tier customs tariff calculator applying ECOWAS CET rates",
+            "Demurrage escalation penalty formula based on terminal holding duration",
+            "Landed unit cost sensitivity analysis for +/- 20% NGN/USD FX fluctuations"
+        ],
+        "skill_tags": ["Landed-Cost Modelling", "FX Sensitivity", "Customs Tariffs", "Supply Chain Invariance"],
+        "posted_by": "Adebayo Alaba Merchant (SME Rail)",
+        "posted_date": "2026-11-09",
+        "applicants_count": 9,
+        "status": "Active"
+    },
+    {
+        "id": "task-emp-003",
+        "title": "Kuda Micro-Savings Retention & Payback Ledger",
+        "company_name": "Kuda Microfinance Bank",
+        "role_track": "junior_data_analyst",
+        "role_title": "Junior Data Analyst",
+        "timebox_mins": 120,
+        "data_budget_mb": 60,
+        "problem_statement": "A digital banking app tracks monthly savings cohorts and recurring subscription churn. You must model Customer Acquisition Cost (CAC) payback periods and lifetime gross margin per active saver across 12 monthly cohorts.",
+        "deliverables": [
+            "12-month cohort retention triangle with dynamic churn percentage formulas",
+            "CAC payback period calculator segmented by organic vs paid acquisition channels",
+            "Sensitivity shock proving whether marketing spend remains solvent under 15% deposit outflow"
+        ],
+        "skill_tags": ["Cohort Retention", "Unit Economics", "LTV/CAC Modelling", "Customer Churn Analytics"],
+        "posted_by": "Growth & Analytics Team",
+        "posted_date": "2026-11-10",
+        "applicants_count": 21,
+        "status": "Active"
+    }
+]
+
+def load_employer_tasks() -> List[Dict[str, Any]]:
+    if os.path.isfile(EMPLOYER_TASKS_FILE):
+        try:
+            with open(EMPLOYER_TASKS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # Initialize with default tasks
+    save_employer_tasks(DEFAULT_EMPLOYER_TASKS)
+    return DEFAULT_EMPLOYER_TASKS
+
+def save_employer_tasks(tasks: List[Dict[str, Any]]) -> None:
+    try:
+        with open(EMPLOYER_TASKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Warning: could not save employer tasks: {e}")
+
+
+@app.get("/api/auth/demo-users")
+def get_demo_users():
+    """Return available preset demo accounts for student and employer portals."""
+    return {"status": "success", "users": DEMO_USERS}
+
+
+@app.post("/api/auth/login")
+def login(req: LoginRequest):
+    """Authenticate or instantiate a session for Student or Employer."""
+    email_clean = req.email.strip().lower()
+    role_clean = (req.role or "student").strip().lower()
+
+    # Check existing demo users
+    for user in DEMO_USERS:
+        if user["email"].lower() == email_clean:
+            return {
+                "status": "success",
+                "message": f"Welcome back, {user['name']}!",
+                "user": user
+            }
+
+    # Dynamically provision session for arbitrary valid emails
+    generated_name = req.name or (email_clean.split("@")[0].replace(".", " ").title())
+    user_session = {
+        "id": f"usr_{uuid.uuid4().hex[:8]}",
+        "email": email_clean,
+        "role": role_clean,
+        "name": generated_name,
+        "organization": req.organization or ("University Partner" if role_clean == "student" else "Hiring Organization"),
+        "alias": generated_name,
+        "level": "Working" if role_clean == "student" else None,
+        "title": "Talent Partner" if role_clean == "employer" else "Student Candidate"
+    }
+    return {
+        "status": "success",
+        "message": f"Session established for {generated_name}",
+        "user": user_session
+    }
+
+
+@app.get("/api/employer/tasks")
+def list_employer_tasks(role: Optional[str] = None):
+    """Return active tasks and micro-projects posted by employers/SMEs."""
+    tasks = load_employer_tasks()
+    if role:
+        tasks = [t for t in tasks if t.get("role_track") == role]
+    return {
+        "status": "success",
+        "count": len(tasks),
+        "tasks": tasks
+    }
+
+
+@app.post("/api/employer/tasks")
+def create_employer_task(task_in: EmployerTaskCreate):
+    """Post a new challenge or micro-project from an employer or SME voice note."""
+    tasks = load_employer_tasks()
+    
+    role_titles = {
+        "graduate_supply_chain_analyst": "Graduate Supply-Chain Analyst",
+        "junior_data_analyst": "Junior Data Analyst",
+        "operations_associate": "Operations Associate",
+        "financial_modelling_intern": "Financial Modelling Intern"
+    }
+    
+    new_task = {
+        "id": f"task-emp-{uuid.uuid4().hex[:6]}",
+        "title": task_in.title,
+        "company_name": task_in.company_name,
+        "role_track": task_in.role_track,
+        "role_title": role_titles.get(task_in.role_track, task_in.role_track.replace("_", " ").title()),
+        "timebox_mins": task_in.timebox_mins,
+        "data_budget_mb": task_in.data_budget_mb,
+        "problem_statement": task_in.problem_statement,
+        "deliverables": task_in.deliverables,
+        "skill_tags": task_in.skill_tags,
+        "posted_by": task_in.posted_by,
+        "posted_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "applicants_count": 0,
+        "status": "Active"
+    }
+    tasks.insert(0, new_task)
+    save_employer_tasks(tasks)
+    return {
+        "status": "success",
+        "message": "Task published to student portal successfully!",
+        "task": new_task
     }
 
 

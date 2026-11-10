@@ -458,4 +458,57 @@ class TestServer:
         assert res.status_code == 200
         assert "application/vnd.openxmlformats" in res.headers.get("content-type", "")
 
+    def test_auth_demo_users(self):
+        res = self.client.get("/api/auth/demo-users")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert len(data["users"]) >= 4
+        emails = [u["email"] for u in data["users"]]
+        assert "ada@unilag.edu.ng" in emails
+        assert "kemi@moniepoint.com" in emails
+
+    def test_auth_login_student(self):
+        res = self.client.post("/api/auth/login", json={"email": "ada@unilag.edu.ng", "role": "student"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["user"]["role"] == "student"
+        assert data["user"]["name"] == "Ada Okafor"
+
+    def test_auth_login_employer(self):
+        res = self.client.post("/api/auth/login", json={"email": "kemi@moniepoint.com", "role": "employer"})
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["user"]["role"] == "employer"
+        assert data["user"]["name"] == "Kemi Adebayo"
+
+    def test_employer_tasks_list(self):
+        res = self.client.get("/api/employer/tasks")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["count"] >= 3
+        assert len(data["tasks"]) >= 3
+
+    def test_employer_task_create(self):
+        task_payload = {
+            "title": "Flutterwave FX Arbitrage Settlement Model",
+            "role_track": "financial_modelling_intern",
+            "company_name": "Flutterwave",
+            "timebox_mins": 90,
+            "data_budget_mb": 50,
+            "problem_statement": "Cross-border payment corridors require dynamic hedging against Naira fluctuations.",
+            "deliverables": ["FX hedging sensitivity table", "Intraday settlement buffer calculation"],
+            "skill_tags": ["FX Hedging", "Treasury Operations", "Dynamic Invariance"],
+            "posted_by": "Tunde Bakare (Flutterwave)"
+        }
+        res = self.client.post("/api/employer/tasks", json=task_payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["task"]["title"] == "Flutterwave FX Arbitrage Settlement Model"
+        assert data["task"]["company_name"] == "Flutterwave"
+
 

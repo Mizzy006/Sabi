@@ -98,12 +98,15 @@ const SCENARIOS = {
 
 // Global State
 const Sabi = {
+    currentUser: null,
     activeTab: 'student',
     currentRole: 'graduate_supply_chain_analyst',
     currentSessionId: null,
     currentQuestionIndex: 0,
     defenceQuestions: [],
     lastGeneratedBrief: null,
+    allEmployerTasks: [],
+    currentFilterTrack: 'all',
     blindMode: true,
     mediaRecorder: null,
     audioChunks: [],
@@ -125,18 +128,31 @@ function showToast(message, type = 'info') {
     showToast.timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
-// Tab Switching
+// Tab Switching with Portal Role Enforcement
 function switchTab(tabId) {
+    const userRole = Sabi.currentUser ? Sabi.currentUser.role : 'student';
+
+    // Disallow cross-portal tab switching
+    if (userRole === 'student' && ['employer', 'sme', 'radar'].includes(tabId)) {
+        showToast('Employer Portal Restricted: Sign in as an Employer to evaluate candidates or post tasks.', 'warning');
+        return;
+    }
+    if (userRole === 'employer' && ['student', 'employer-tasks'].includes(tabId)) {
+        showToast('Student Portal: As an employer, manage tasks and candidate pipelines. Switch to Student to take tests.', 'info');
+        return;
+    }
+
     Sabi.activeTab = tabId;
     if (location.hash.startsWith('#app')) history.replaceState(null, '', '#app/' + tabId);
     
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const isCurrent = btn.getAttribute('data-tab') === tabId;
+        const baseClass = btn.classList.contains('student-only') ? 'student-only' : 'employer-only';
         if (isCurrent) {
-            btn.className = 'tab-btn is-active';
+            btn.className = `tab-btn is-active ${baseClass}`;
             btn.setAttribute('aria-selected', 'true');
         } else {
-            btn.className = 'tab-btn';
+            btn.className = `tab-btn ${baseClass}`;
             btn.setAttribute('aria-selected', 'false');
         }
     });
@@ -153,6 +169,8 @@ function switchTab(tabId) {
         loadCandidates();
     } else if (tabId === 'radar') {
         loadRadarData();
+    } else if (tabId === 'employer-tasks' || tabId === 'sme') {
+        loadEmployerTasks();
     }
 }
 
@@ -1219,21 +1237,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Initialize Auth Session and Tasks
+    initAuth();
+    loadEmployerTasks();
 });
 
 
 // ---------------------------------------------------------------------------
-// VIEW ROUTING: overview page and app share one document, switched by URL hash
-// (#app or #app/<tab> opens the app; anything else shows the overview)
+// VIEW ROUTING: overview page, login portal, and app views switched by URL hash
 // ---------------------------------------------------------------------------
 function route() {
     const h = location.hash;
+    const inAuth = h.startsWith('#login');
     const inApp = h.startsWith('#app');
-    document.getElementById('view-landing').classList.toggle('hidden', inApp);
-    document.getElementById('view-app').classList.toggle('hidden', !inApp);
-    if (inApp) {
+
+    const landingEl = document.getElementById('view-landing');
+    const authEl = document.getElementById('view-auth');
+    const appEl = document.getElementById('view-app');
+
+    if (landingEl) landingEl.classList.toggle('hidden', inAuth || inApp);
+    if (authEl) authEl.classList.toggle('hidden', !inAuth);
+    if (appEl) appEl.classList.toggle('hidden', !inApp);
+
+    if (inAuth) {
+        const authRole = h.split('/')[1] === 'employer' ? 'employer' : 'student';
+        switchAuthMode(authRole);
+        window.scrollTo(0, 0);
+    } else if (inApp) {
+        if (!Sabi.currentUser) initAuth();
         const tab = h.split('/')[1];
-        if (['student', 'employer', 'radar', 'sme'].includes(tab)) switchTab(tab);
+        if (['student', 'employer', 'radar', 'sme', 'employer-tasks'].includes(tab)) {
+            switchTab(tab);
+        } else {
+            // Default tab based on role
+            switchTab(Sabi.currentUser.role === 'employer' ? 'employer' : 'student');
+        }
         window.scrollTo(0, 0);
     } else if (!h || h === '#') {
         window.scrollTo(0, 0);
@@ -1242,6 +1281,362 @@ function route() {
 window.addEventListener('hashchange', route);
 document.addEventListener('DOMContentLoaded', route);
 
+
+// ---------------------------------------------------------------------------
+// AUTHENTICATION & PORTAL ROLE SEPARATION
+// ---------------------------------------------------------------------------
+
+function initAuth() {
+    let saved = null;
+    try {
+        const raw = localStorage.getItem('sabi-user');
+        if (raw) saved = JSON.parse(raw);
+    } catch (e) {}
+
+    if (!saved || !saved.role) {
+        // Default to Ada Okafor (Student) for initial load
+        saved = {
+            id: 'usr_ada_001',
+            email: 'ada@unilag.edu.ng',
+            role: 'student',
+            name: 'Ada Okafor',
+            organization: 'University of Lagos',
+            alias: 'Ada Okafor',
+            level: 'Working'
+        };
+    }
+    setUserSession(saved, false);
+}
+
+function switchAuthMode(role) {
+    const studentTab = document.getElementById('auth-tab-student');
+    const employerTab = document.getElementById('auth-tab-employer');
+    const studentCard = document.getElementById('auth-card-student');
+    const employerCard = document.getElementById('auth-card-employer');
+
+    if (role === 'employer') {
+        if (studentTab) studentTab.className = 'portal-tab-btn';
+        if (employerTab) employerTab.className = 'portal-tab-btn is-active-employer';
+        if (studentCard) studentCard.classList.add('hidden');
+        if (employerCard) employerCard.classList.remove('hidden');
+        if (location.hash.startsWith('#login')) history.replaceState(null, '', '#login/employer');
+    } else {
+        if (studentTab) studentTab.className = 'portal-tab-btn is-active';
+        if (employerTab) employerTab.className = 'portal-tab-btn';
+        if (studentCard) studentCard.classList.remove('hidden');
+        if (employerCard) employerCard.classList.add('hidden');
+        if (location.hash.startsWith('#login')) history.replaceState(null, '', '#login/student');
+    }
+}
+
+async function loginQuick(email, role) {
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, role: role })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+            setUserSession(data.user, true);
+            showToast(`Signed in as ${data.user.name} (${data.user.role === 'student' ? 'Student' : 'Employer'})`, 'success');
+            location.hash = data.user.role === 'student' ? '#app/student' : '#app/employer';
+        } else {
+            showToast(data.detail || 'Login failed', 'error');
+        }
+    } catch (err) {
+        showToast('Login error: ' + err.message, 'error');
+    }
+}
+
+async function handleAuthSubmit(event, role) {
+    event.preventDefault();
+    let email, name, org;
+    if (role === 'student') {
+        email = document.getElementById('auth-student-email')?.value.trim();
+        name = document.getElementById('auth-student-name')?.value.trim();
+    } else {
+        email = document.getElementById('auth-employer-email')?.value.trim();
+        org = document.getElementById('auth-employer-org')?.value.trim();
+    }
+
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, role: role, name: name, organization: org })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+            setUserSession(data.user, true);
+            showToast(`Welcome, ${data.user.name}!`, 'success');
+            location.hash = data.user.role === 'student' ? '#app/student' : '#app/employer';
+        } else {
+            showToast(data.detail || 'Failed to sign in', 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+function setUserSession(user, saveToStorage = true) {
+    Sabi.currentUser = user;
+    if (saveToStorage) {
+        try { localStorage.setItem('sabi-user', JSON.stringify(user)); } catch (e) {}
+    }
+
+    // Update Header Badge
+    const nameEl = document.getElementById('auth-user-name');
+    const roleBadge = document.getElementById('auth-user-role-badge');
+    const dotEl = document.getElementById('auth-user-dot');
+    const aliasInput = document.getElementById('candidate-alias');
+
+    if (nameEl) nameEl.innerText = user.name || 'User';
+    if (aliasInput && user.role === 'student') aliasInput.value = user.alias || user.name || 'Ada Okafor';
+
+    if (roleBadge) {
+        if (user.role === 'student') {
+            roleBadge.className = 'badge-student';
+            roleBadge.innerText = 'Student';
+            if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        } else {
+            roleBadge.className = 'badge-employer';
+            roleBadge.innerText = `Employer · ${user.organization || user.company || 'Moniepoint'}`;
+            if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-purple-500';
+        }
+    }
+
+    applyPortalRole(user.role);
+}
+
+function applyPortalRole(role) {
+    const studentElements = document.querySelectorAll('.student-only');
+    const employerElements = document.querySelectorAll('.employer-only');
+
+    if (role === 'student') {
+        studentElements.forEach(el => el.style.display = '');
+        employerElements.forEach(el => el.style.display = 'none');
+        if (['employer', 'sme', 'radar'].includes(Sabi.activeTab)) {
+            switchTab('student');
+        }
+    } else {
+        studentElements.forEach(el => el.style.display = 'none');
+        employerElements.forEach(el => el.style.display = '');
+        if (['student', 'employer-tasks'].includes(Sabi.activeTab)) {
+            switchTab('employer');
+        }
+    }
+}
+
+function logout() {
+    showToast('Redirecting to Portal Selector...', 'info');
+    location.hash = '#login/' + (Sabi.currentUser?.role || 'student');
+}
+
+// ---------------------------------------------------------------------------
+// EMPLOYER TASKS & LIVE BRIEFS MANAGEMENT
+// ---------------------------------------------------------------------------
+
+async function loadEmployerTasks() {
+    try {
+        const res = await fetch('/api/employer/tasks');
+        const data = await res.json();
+        if (res.ok && data.tasks) {
+            Sabi.allEmployerTasks = data.tasks;
+            renderStudentEmployerTasks();
+            renderEmployerActiveTasks();
+        }
+    } catch (err) {
+        console.warn('Failed to load employer tasks:', err);
+    }
+}
+
+function renderStudentEmployerTasks() {
+    const container = document.getElementById('student-employer-tasks-grid');
+    if (!container) return;
+
+    let tasks = Sabi.allEmployerTasks || [];
+    if (Sabi.currentFilterTrack && Sabi.currentFilterTrack !== 'all') {
+        tasks = tasks.filter(t => t.role_track === Sabi.currentFilterTrack);
+    }
+
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full panel text-center py-10 text-slate-400 text-xs">
+                No active tasks found for this track. Check back soon or switch filter!
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = tasks.map(task => `
+        <div class="panel space-y-4 flex flex-col justify-between hover:border-emerald-300 transition-colors">
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="badge-student text-[11px] font-semibold">${task.company_name}</span>
+                    <span class="text-xs font-mono font-medium text-slate-500">${task.timebox_mins || 90} mins</span>
+                </div>
+                <h3 class="font-semibold text-slate-900 text-sm leading-snug">${task.title}</h3>
+                <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">${task.problem_statement}</p>
+                
+                <div class="space-y-1 pt-1 border-t border-slate-100">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Target Deliverables:</span>
+                    <ul class="text-xs text-slate-700 space-y-1">
+                        ${(task.deliverables || []).slice(0, 3).map(d => `<li class="flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span><span>${d}</span></li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+                <div class="flex flex-wrap gap-1">
+                    ${(task.skill_tags || []).map(s => `<span class="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded font-medium">${s}</span>`).join('')}
+                </div>
+                <button type="button" onclick="takeEmployerChallenge('${task.id}', '${task.role_track}')" class="btn btn-primary btn-sm w-full font-semibold">
+                    ⚡ Take on This Challenge
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderEmployerActiveTasks() {
+    const container = document.getElementById('employer-active-tasks-grid');
+    if (!container) return;
+
+    const tasks = Sabi.allEmployerTasks || [];
+    if (tasks.length === 0) {
+        container.innerHTML = `<div class="panel text-center py-6 text-slate-400 text-xs">No challenges published yet. Post one above or extract from an SME voice note!</div>`;
+        return;
+    }
+
+    container.innerHTML = tasks.map(task => `
+        <div class="panel-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-slate-900 text-xs">${task.title}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">${task.status || 'Active'}</span>
+                </div>
+                <p class="text-xs text-slate-500">${task.role_title} · Posted by ${task.posted_by} · ${task.timebox_mins} mins</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                    ${task.applicants_count || 0} Submissions
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterEmployerTasks(track, btn) {
+    Sabi.currentFilterTrack = track;
+    document.querySelectorAll('#tab-employer-tasks .role-pill').forEach(b => b.classList.remove('is-active'));
+    if (btn) btn.classList.add('is-active');
+    renderStudentEmployerTasks();
+}
+
+function takeEmployerChallenge(taskId, roleTrack) {
+    // Switch to student portal, select matching role, and open scenario
+    if (roleTrack) {
+        onRoleChange(roleTrack);
+    }
+    switchTab('student');
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+    showToast(`Loaded scenario matching this challenge: ${roleTrack.replace(/_/g, ' ')}`, 'info');
+}
+
+async function publishExtractedBriefAsTask() {
+    if (!Sabi.lastGeneratedBrief) {
+        showToast('Please extract an SME brief first before publishing.', 'warning');
+        return;
+    }
+
+    const b = Sabi.lastGeneratedBrief;
+    const btn = document.getElementById('btn-publish-extracted-task');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Publishing...';
+    }
+
+    try {
+        const res = await fetch('/api/employer/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: `${b.business_type}: Operational Analysis Brief`,
+                role_track: 'graduate_supply_chain_analyst',
+                company_name: `${b.owner_alias} Enterprise`,
+                timebox_mins: 90,
+                data_budget_mb: 45,
+                problem_statement: b.problem_statement,
+                deliverables: b.deliverables,
+                skill_tags: b.skill_tags,
+                posted_by: `${Sabi.currentUser?.name || 'SME Partner'} (${Sabi.currentUser?.organization || 'Lagos SME Rail'})`
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast('Brief successfully published as live student task!', 'success');
+            loadEmployerTasks();
+        } else {
+            showToast('Failed to publish: ' + (data.detail || 'Unknown error'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀 Publish to Student Portal</span>';
+        }
+    }
+}
+
+async function handleManualTaskSubmit(event) {
+    event.preventDefault();
+    const title = document.getElementById('emp-task-title')?.value.trim();
+    const track = document.getElementById('emp-task-track')?.value;
+    const timebox = parseInt(document.getElementById('emp-task-timebox')?.value) || 90;
+    const problem = document.getElementById('emp-task-problem')?.value.trim();
+    const deliverablesRaw = document.getElementById('emp-task-deliverables')?.value.trim();
+    const skillsRaw = document.getElementById('emp-task-skills')?.value.trim();
+
+    const deliverables = deliverablesRaw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    const skills = skillsRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+    const btn = document.getElementById('btn-create-manual-task');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/employer/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: title,
+                role_track: track,
+                company_name: Sabi.currentUser?.organization || Sabi.currentUser?.company || 'Hiring Partner',
+                timebox_mins: timebox,
+                data_budget_mb: 50,
+                problem_statement: problem,
+                deliverables: deliverables,
+                skill_tags: skills,
+                posted_by: Sabi.currentUser?.name || 'Talent Partner'
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`Task "${title}" published live to students!`, 'success');
+            event.target.reset();
+            loadEmployerTasks();
+        } else {
+            showToast('Failed to post task: ' + (data.detail || 'Error'), 'error');
+        }
+    } catch (err) {
+        showToast('Error posting task: ' + err.message, 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // DATA SAVER (lite mode): the mode is chosen in the page head before heavy files

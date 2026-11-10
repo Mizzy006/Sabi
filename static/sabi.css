@@ -284,3 +284,34 @@ summary { cursor: pointer; }
 :root[data-mode="lite"] .lp-hero { padding: 40px 0 48px; }
 :root[data-mode="lite"] .lp-band { padding: 48px 0; }
 :root[data-mode="lite"] .lp-nav { background: #fff; }
+
+/* ---- Portal & Auth Views ---- */
+.auth-wrap { max-width: 540px; margin: 40px auto; padding: 0 16px; }
+.portal-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.portal-tab-btn {
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    text-align: center; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer;
+    transition: all .15s ease;
+}
+.portal-tab-btn:hover { border-color: #b9c3bf; color: var(--ink); }
+.portal-tab-btn.is-active {
+    border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); font-weight: 600;
+}
+.portal-tab-btn.is-active-employer {
+    border-color: #7c3aed; background: #f5f3ff; color: #5b21b6; font-weight: 600;
+}
+.demo-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    font-size: 12px; font-weight: 500; color: var(--ink); cursor: pointer; text-align: left;
+    transition: background .12s, border-color .12s;
+}
+.demo-chip:hover { background: #f0f3f2; border-color: #b9c3bf; }
+.badge-student {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent-tint); color: var(--accent-ink); font-size: 11px; font-weight: 600; border: 1px solid #bcd9c8;
+}
+.badge-employer {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+    background: #f5f3ff; color: #5b21b6; font-size: 11px; font-weight: 600; border: 1px solid #ddd6fe;
+}

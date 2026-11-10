@@ -1,0 +1,123 @@
+[
+  {
+    "id": "task-emp-ee151f",
+    "title": "Flutterwave FX Arbitrage Settlement Model",
+    "company_name": "Flutterwave",
+    "role_track": "financial_modelling_intern",
+    "role_title": "Financial Modelling Intern",
+    "timebox_mins": 90,
+    "data_budget_mb": 50,
+    "problem_statement": "Cross-border payment corridors require dynamic hedging against Naira fluctuations.",
+    "deliverables": [
+      "FX hedging sensitivity table",
+      "Intraday settlement buffer calculation"
+    ],
+    "skill_tags": [
+      "FX Hedging",
+      "Treasury Operations",
+      "Dynamic Invariance"
+    ],
+    "posted_by": "Tunde Bakare (Flutterwave)",
+    "posted_date": "2026-11-10",
+    "applicants_count": 0,
+    "status": "Active"
+  },
+  {
+    "id": "task-emp-369801",
+    "title": "Flutterwave FX Arbitrage Settlement Model",
+    "company_name": "Flutterwave",
+    "role_track": "financial_modelling_intern",
+    "role_title": "Financial Modelling Intern",
+    "timebox_mins": 90,
+    "data_budget_mb": 50,
+    "problem_statement": "Cross-border payment corridors require dynamic hedging against Naira fluctuations.",
+    "deliverables": [
+      "FX hedging sensitivity table",
+      "Intraday settlement buffer calculation"
+    ],
+    "skill_tags": [
+      "FX Hedging",
+      "Treasury Operations",
+      "Dynamic Invariance"
+    ],
+    "posted_by": "Tunde Bakare (Flutterwave)",
+    "posted_date": "2026-11-10",
+    "applicants_count": 0,
+    "status": "Active"
+  },
+  {
+    "id": "task-emp-001",
+    "title": "Moniepoint POS Float Rebalance & Settlement Model",
+    "company_name": "Moniepoint",
+    "role_track": "operations_associate",
+    "role_title": "Operations Associate",
+    "timebox_mins": 90,
+    "data_budget_mb": 45,
+    "problem_statement": "Agency banking aggregators in Ikeja and Alaba experience uneven terminal liquidity during weekend commercial peaks. Construct an automated dispatch rebalancing model to minimize cashout failure rates while limiting cash-in-transit demurrage.",
+    "deliverables": [
+      "Dynamic terminal cashout prediction formula based on 30-day velocity",
+      "Optimal float allocation matrix across 25 high-volume agency nodes",
+      "Liquidity stress sensitivity table reflecting 35% weekend cashout surge"
+    ],
+    "skill_tags": [
+      "Liquidity Modelling",
+      "Haulage Fleet Dispatch",
+      "Scenario Analysis",
+      "Excel Sensitivity Tables"
+    ],
+    "posted_by": "Kemi Adebayo (Moniepoint)",
+    "posted_date": "2026-11-08",
+    "applicants_count": 14,
+    "status": "Active"
+  },
+  {
+    "id": "task-emp-002",
+    "title": "Alaba Market Electronics Import Demurrage Shield",
+    "company_name": "Alaba Trade Logistics (SME)",
+    "role_track": "graduate_supply_chain_analyst",
+    "role_title": "Graduate Supply-Chain Analyst",
+    "timebox_mins": 90,
+    "data_budget_mb": 50,
+    "problem_statement": "Electronics importers docking at Apapa Port face fluctuating tariff surcharges and compounding demurrage penalties after 5 free days. Construct a dynamic spreadsheet model linking USD purchasing prices to landed Naira costs per carton under FX shock.",
+    "deliverables": [
+      "Multi-tier customs tariff calculator applying ECOWAS CET rates",
+      "Demurrage escalation penalty formula based on terminal holding duration",
+      "Landed unit cost sensitivity analysis for +/- 20% NGN/USD FX fluctuations"
+    ],
+    "skill_tags": [
+      "Landed-Cost Modelling",
+      "FX Sensitivity",
+      "Customs Tariffs",
+      "Supply Chain Invariance"
+    ],
+    "posted_by": "Adebayo Alaba Merchant (SME Rail)",
+    "posted_date": "2026-11-09",
+    "applicants_count": 9,
+    "status": "Active"
+  },
+  {
+    "id": "task-emp-003",
+    "title": "Kuda Micro-Savings Retention & Payback Ledger",
+    "company_name": "Kuda Microfinance Bank",
+    "role_track": "junior_data_analyst",
+    "role_title": "Junior Data Analyst",
+    "timebox_mins": 120,
+    "data_budget_mb": 60,
+    "problem_statement": "A digital banking app tracks monthly savings cohorts and recurring subscription churn. You must model Customer Acquisition Cost (CAC) payback periods and lifetime gross margin per active saver across 12 monthly cohorts.",
+    "deliverables": [
+      "12-month cohort retention triangle with dynamic churn percentage formulas",
+      "CAC payback period calculator segmented by organic vs paid acquisition channels",
+      "Sensitivity shock proving whether marketing spend remains solvent under 15% deposit outflow"
+    ],
+    "skill_tags": [
+      "Cohort Retention",
+      "Unit Economics",
+      "LTV/CAC Modelling",
+      "Customer Churn Analytics"
+    ],
+    "posted_by": "Growth & Analytics Team",
+    "posted_date": "2026-11-10",
+    "applicants_count": 21,
+    "status": "Active"
+  }
+]
