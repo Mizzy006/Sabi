@@ -127,7 +127,7 @@ def extract_skills_from_curriculum(text: str, groq_key: Optional[str] = None) ->
                 f"Which of the following standardized skill IDs are taught or practiced in this curriculum?\n"
                 f"Choose strictly from this list:\n"
                 f"{list(SKILLS_TAXONOMY.keys())}\n\n"
-                f"Return ONLY a valid JSON list of skill ID strings, e.g. [\"EXCEL_BASIC\", \"STATS_INFERENCE\"]."
+                f"Return ONLY a JSON object with key 'skills' containing the list of matching skill ID strings, e.g. {{\"skills\": [\"EXCEL_BASIC\", \"STATS_INFERENCE\"]}}."
             )
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
