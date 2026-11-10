@@ -118,34 +118,26 @@ const Sabi = {
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     if (!toast) return;
-    
-    const colors = {
-        info: 'bg-slate-900 text-white',
-        success: 'bg-emerald-700 text-white',
-        warning: 'bg-amber-600 text-white',
-        error: 'bg-rose-700 text-white'
-    };
-    
-    toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3 rounded-lg shadow-xl text-sm font-medium transition-all duration-300 flex items-center space-x-2 ${colors[type] || colors.info}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    toast.classList.remove('hidden', 'opacity-0');
-    
-    setTimeout(() => {
-        toast.classList.add('opacity-0');
-        setTimeout(() => toast.classList.add('hidden'), 300);
-    }, 4000);
+    const kinds = ['info', 'success', 'warning', 'error'];
+    toast.className = 'toast toast-' + (kinds.includes(type) ? type : 'info');
+    toast.textContent = message;
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
 // Tab Switching
 function switchTab(tabId) {
     Sabi.activeTab = tabId;
+    if (location.hash.startsWith('#app')) history.replaceState(null, '', '#app/' + tabId);
     
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const isCurrent = btn.getAttribute('data-tab') === tabId;
         if (isCurrent) {
-            btn.className = 'tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-emerald-600 font-semibold text-emerald-700 bg-emerald-50/50 rounded-t-lg transition-colors';
+            btn.className = 'tab-btn is-active';
+            btn.setAttribute('aria-selected', 'true');
         } else {
-            btn.className = 'tab-btn flex items-center space-x-2 py-3 px-4 border-b-2 border-transparent font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg transition-colors';
+            btn.className = 'tab-btn';
+            btn.setAttribute('aria-selected', 'false');
         }
     });
 
@@ -183,9 +175,9 @@ function onRoleChange(role) {
     document.querySelectorAll('.role-pill').forEach(btn => {
         const isSelected = btn.getAttribute('data-role') === role;
         if (isSelected) {
-            btn.className = 'role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm';
+            btn.className = 'role-pill is-active';
         } else {
-            btn.className = 'role-pill text-[11px] font-semibold py-1.5 px-2 rounded-lg border text-left transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50';
+            btn.className = 'role-pill';
         }
     });
 
@@ -196,7 +188,7 @@ function onRoleChange(role) {
     const demoBtn = document.getElementById('btn-autopsy-demo');
     const sc = SCENARIOS[role] || SCENARIOS["graduate_supply_chain_analyst"];
     if (demoBtn && sc) {
-        demoBtn.innerHTML = `<span>⚡</span><span>Demo with ${sc.role_title} Reference Pack</span>`;
+        demoBtn.innerHTML = `<span>Demo with ${sc.role_title} Reference Pack</span>`;
     }
 
     // 5. Hide previous autopsy results and defence until user triggers for this role
@@ -209,8 +201,6 @@ function onRoleChange(role) {
 
     // 6. Recalculate PuLP study plan
     solvePlan();
-
-    showToast(`Switched scenario to: ${sc?.role_title || role}`, 'info');
 }
 
 function updateScenarioUI(role) {
@@ -224,7 +214,7 @@ function updateScenarioUI(role) {
     const desc = document.getElementById('scenario-desc');
     const dlBtn = document.getElementById('pack-download-btn');
 
-    if (badge) badge.innerText = `DAY ONE: ${sc.category.toUpperCase()}`;
+    if (badge) badge.innerText = `Day one: ${sc.category}`;
     if (title) title.innerText = sc.name;
     if (timebox) timebox.innerText = `Timebox: ${sc.timebox}`;
     if (desc) desc.innerText = sc.description;
@@ -240,11 +230,11 @@ function updateScenarioUI(role) {
     const shocksContainer = document.getElementById('scenario-shocks-preview');
     if (shocksContainer && sc.shocks) {
         shocksContainer.innerHTML = sc.shocks.map((s, idx) => `
-            <div class="flex items-start space-x-2 text-[11px] text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                <span class="text-emerald-700 font-black text-xs">#${idx+1}</span>
+            <div class="flex items-start space-x-2 text-xs text-slate-700 panel-sm">
+                <span class="text-emerald-700 font-semibold text-xs">#${idx+1}</span>
                 <div>
-                    <span class="font-bold block text-slate-800">${s.name}</span>
-                    <span class="text-slate-500 text-[10px] leading-tight block mt-0.5">${s.change}</span>
+                    <span class="font-semibold block text-slate-800">${s.name}</span>
+                    <span class="text-slate-500 text-xs leading-tight block mt-0.5">${s.change}</span>
                 </div>
             </div>
         `).join('');
@@ -272,7 +262,7 @@ async function solvePlan() {
     const btn = document.getElementById('btn-solve-plan');
     const originalText = btn ? btn.innerHTML : '';
     if (btn) {
-        btn.innerHTML = `<span class="animate-spin inline-block mr-2">⟳</span> Solving with PuLP...`;
+        btn.innerHTML = `<span class="spinner"></span> Solving with PuLP...`;
         btn.disabled = true;
     }
 
@@ -305,7 +295,7 @@ async function solvePlan() {
         } else {
             data.weekly_breakdown.forEach((w) => {
                 const weekCard = document.createElement('div');
-                weekCard.className = 'border border-slate-200 bg-white rounded-lg p-3.5 shadow-sm';
+                weekCard.className = 'panel-sm';
                 
                 let resList = w.resources.map(r => `
                     <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
@@ -313,14 +303,14 @@ async function solvePlan() {
                         <div class="flex items-center space-x-2 text-slate-500">
                             <span>${r.hours}h</span>
                             <span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono">${r.mb}MB</span>
-                            ${r.offline ? '<span class="bg-emerald-50 text-emerald-700 px-1 rounded text-[10px]">Offline</span>' : ''}
+                            ${r.offline ? '<span class="bg-emerald-50 text-emerald-700 px-1 rounded text-xs">Offline</span>' : ''}
                         </div>
                     </div>
                 `).join('');
 
                 weekCard.innerHTML = `
                     <div class="flex justify-between items-center mb-1.5">
-                        <span class="font-semibold text-xs uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Week ${w.week}</span>
+                        <span class="font-semibold text-xs text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Week ${w.week}</span>
                         <span class="text-xs text-slate-500 font-medium">${w.hours_used}h / ${w.mb_used}MB</span>
                     </div>
                     <div class="space-y-1">
@@ -366,7 +356,7 @@ async function generateDayOnePack() {
     const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
     const btn = document.getElementById('btn-generate-pack');
     btn.disabled = true;
-    btn.innerHTML = '⟳ Generating...';
+    btn.innerHTML = 'Generating...';
 
     try {
         const res = await fetch('/api/dayone/pack/generate', {
@@ -397,7 +387,7 @@ async function generateDayOnePack() {
 async function runAutopsySubmission(isDemo = false) {
     const autopsyBtn = document.getElementById(isDemo ? 'btn-autopsy-demo' : 'btn-autopsy-upload');
     const originalText = autopsyBtn.innerText;
-    autopsyBtn.innerText = '⟳ Running Metamorphic Autopsy...';
+    autopsyBtn.innerText = 'Running Metamorphic Autopsy...';
     autopsyBtn.disabled = true;
 
     try {
@@ -560,16 +550,16 @@ async function submitDefenceAnswer() {
         evalBox.className = `p-4 rounded-lg border text-sm font-medium ${isGood ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`;
         evalBox.innerHTML = `
             <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-xs uppercase tracking-wide">Verdict: ${data.classification}</span>
+                <span class="font-semibold text-xs">Verdict: ${data.classification}</span>
                 <span class="text-xs">${data.claims_verified} of ${data.claims_detected} formula claims verified</span>
             </div>
-            <p class="text-xs opacity-90">Gate: ${data.understanding_gate ? '✅ Passed Understanding Gate' : '⚠️ Under Review'} · Recommended Level: ${data.recommended_level}</p>
+            <p class="text-xs opacity-90">Gate: ${data.understanding_gate ? 'Passed Understanding Gate' : 'Under Review'} · Recommended Level: ${data.recommended_level}</p>
         `;
 
         if (data.evidence_brief_id) {
             Sabi.lastGeneratedBrief = data.evidence_brief_id;
             setTimeout(() => {
-                showToast('🎉 Defence complete! Cryptographic Evidence Brief generated.', 'success');
+                showToast('Defence complete! Cryptographic Evidence Brief generated.', 'success');
                 renderEvidenceBriefPreview(data.evidence_brief_id, data.evidence_brief_url);
             }, 1200);
         } else {
@@ -603,7 +593,7 @@ function renderEvidenceBriefPreview(briefId, verifyUrl) {
 
 async function loadCandidates() {
     const container = document.getElementById('candidate-list-grid');
-    container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 font-medium"><span class="animate-spin inline-block mr-2">⟳</span> Fetching verified candidates...</div>`;
+    container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 font-medium"><span class="spinner"></span> Fetching verified candidates...</div>`;
 
     try {
         const res = await fetch(`/api/candidates?blind=${Sabi.blindMode}`);
@@ -617,10 +607,10 @@ async function loadCandidates() {
 
         candidates.forEach(c => {
             const card = document.createElement('div');
-            card.className = 'bg-white border border-slate-200 rounded-xl p-5 shadow-sm card-hover flex flex-col justify-between';
+            card.className = 'card-hover flex flex-col justify-between panel';
             
             const nameDisplay = Sabi.blindMode ? c.candidate_alias : (c.candidate_name || c.candidate_alias);
-            const schoolDisplay = Sabi.blindMode ? '🔒 Redacted in Blind Mode' : (c.candidate_school || 'Nigerian University');
+            const schoolDisplay = Sabi.blindMode ? 'Redacted in Blind Mode' : (c.candidate_school || 'Nigerian University');
             
             const skillsHtml = (c.skills || []).map(s => `
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -632,7 +622,7 @@ async function loadCandidates() {
                 <div>
                     <div class="flex justify-between items-start mb-3">
                         <div>
-                            <h4 class="font-bold text-slate-900 text-base">${nameDisplay}</h4>
+                            <h4 class="font-semibold text-slate-900 text-base">${nameDisplay}</h4>
                             <p class="text-xs text-slate-500">${c.target_role}</p>
                             <p class="text-xs text-slate-400 font-mono mt-0.5">${schoolDisplay}</p>
                         </div>
@@ -642,11 +632,11 @@ async function loadCandidates() {
                     <div class="bg-slate-50 rounded-lg p-3 my-3 text-xs space-y-1.5 border border-slate-100">
                         <div class="flex justify-between">
                             <span class="text-slate-600">Metamorphic Shocks:</span>
-                            <span class="font-bold text-emerald-700">${c.signals?.shocks_survived ? c.signals.shocks_survived[0] + '/' + c.signals.shocks_survived[1] : '6/6'} Survived</span>
+                            <span class="font-semibold text-emerald-700">${c.signals?.shocks_survived ? c.signals.shocks_survived[0] + '/' + c.signals.shocks_survived[1] : '6/6'} Survived</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Targeted Defence:</span>
-                            <span class="font-bold text-slate-800">✅ Mrs. Bello Gate Passed</span>
+                            <span class="font-semibold text-slate-800">Mrs. Bello Gate Passed</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-600">Spreadsheet Cleanliness:</span>
@@ -660,12 +650,11 @@ async function loadCandidates() {
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-[11px] font-mono text-slate-400 truncate max-w-[150px]" title="${c.sha256_digest || ''}">
+                    <span class="text-xs font-mono text-slate-400 truncate max-w-[150px]" title="${c.sha256_digest || ''}">
                         SHA: ${(c.sha256_digest || 'd5ae9d12').substring(0, 8)}...
                     </span>
                     <a href="/verify/${c.brief_id}?blind=${Sabi.blindMode}" target="_blank" class="inline-flex items-center text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors">
-                        Verify Proof →
-                    </a>
+                        Verify Proof                     </a>
                 </div>
             `;
             container.appendChild(card);
@@ -679,11 +668,11 @@ function toggleBlindMode() {
     Sabi.blindMode = !Sabi.blindMode;
     const btn = document.getElementById('btn-toggle-blind');
     if (Sabi.blindMode) {
-        btn.innerText = '🛡️ Blind Mode: Active (Pedigree Stripped)';
-        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 text-white shadow-sm';
+        btn.innerText = 'Blind Mode: Active (Pedigree Stripped)';
+        btn.className = 'btn btn-primary btn-sm';
     } else {
-        btn.innerText = '👁️ Blind Mode: Off (Pedigree Visible)';
-        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-800 hover:bg-slate-300';
+        btn.innerText = 'Blind Mode: Off (Pedigree Visible)';
+        btn.className = 'btn btn-quiet btn-sm';
     }
     loadCandidates();
 }
@@ -697,7 +686,7 @@ async function loadRadarData() {
     const chartContainer = document.getElementById('radar-gaps-container');
     const funnelContainer = document.getElementById('radar-funnel-container');
 
-    chartContainer.innerHTML = '<div class="text-center py-10 text-slate-400"><span class="animate-spin inline-block mr-2">⟳</span> Analyzing job market vs curricula...</div>';
+    chartContainer.innerHTML = '<div class="text-center py-10 text-slate-400"><span class="spinner"></span> Analyzing job market vs curricula...</div>';
 
     try {
         const url = dept ? `/api/radar/heatmap?department=${encodeURIComponent(dept)}` : '/api/radar/heatmap';
@@ -712,22 +701,22 @@ async function loadRadarData() {
             const isDeficit = gapPct < 0;
 
             const row = document.createElement('div');
-            row.className = 'bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm space-y-2';
+            row.className = 'space-y-2 panel-sm';
             row.innerHTML = `
                 <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-slate-800">${g.skill.replace(/_/g, ' ')}</span>
+                    <span class="font-semibold text-slate-800">${g.skill.replace(/_/g, ' ')}</span>
                     <span class="px-2 py-0.5 rounded font-mono font-semibold ${isDeficit ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
                         ${isDeficit ? `Deficit: ${gapPct}%` : `Coverage: +${gapPct}%`}
                     </span>
                 </div>
                 <div class="space-y-1">
-                    <div class="flex items-center text-[11px] text-slate-500 justify-between">
+                    <div class="flex items-center text-xs text-slate-500 justify-between">
                         <span>Employer Demand (${demandPct}%)</span>
                         <div class="w-2/3 bg-slate-100 h-2 rounded-full overflow-hidden">
                             <div class="bg-blue-600 h-2 rounded-full" style="width: ${demandPct}%"></div>
                         </div>
                     </div>
-                    <div class="flex items-center text-[11px] text-slate-500 justify-between">
+                    <div class="flex items-center text-xs text-slate-500 justify-between">
                         <span>Curriculum Coverage (${covPct}%)</span>
                         <div class="w-2/3 bg-slate-100 h-2 rounded-full overflow-hidden">
                             <div class="bg-amber-500 h-2 rounded-full" style="width: ${covPct}%"></div>
@@ -741,14 +730,14 @@ async function loadRadarData() {
         funnelContainer.innerHTML = '';
         data.funnels.forEach(f => {
             const card = document.createElement('div');
-            card.className = 'bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-3';
+            card.className = 'space-y-3 panel-sm';
             card.innerHTML = `
-                <h4 class="font-bold text-slate-900 text-sm border-b pb-2">${f.department} Cohort Funnel</h4>
+                <h4 class="font-semibold text-slate-900 text-sm border-b pb-2">${f.department} Cohort Funnel</h4>
                 <div class="space-y-2 text-xs">
                     <div>
                         <div class="flex justify-between mb-1 font-medium">
                             <span class="text-blue-800">1. Taught in Syllabus</span>
-                            <span class="font-bold">${f.taught_pct}%</span>
+                            <span class="font-semibold">${f.taught_pct}%</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${f.taught_pct}%"></div>
@@ -757,7 +746,7 @@ async function loadRadarData() {
                     <div>
                         <div class="flex justify-between mb-1 font-medium">
                             <span class="text-amber-800">2. Practiced in Hands-On Lab</span>
-                            <span class="font-bold">${f.practiced_pct}%</span>
+                            <span class="font-semibold">${f.practiced_pct}%</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div class="bg-amber-500 h-2.5 rounded-full" style="width: ${f.practiced_pct}%"></div>
@@ -766,7 +755,7 @@ async function loadRadarData() {
                     <div>
                         <div class="flex justify-between mb-1 font-medium">
                             <span class="text-emerald-800">3. Proven on Sabi (Tier A/B)</span>
-                            <span class="font-bold text-emerald-700">${f.proven_pct}%</span>
+                            <span class="font-semibold text-emerald-700">${f.proven_pct}%</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div class="bg-emerald-600 h-2.5 rounded-full" style="width: ${f.proven_pct}%"></div>
@@ -800,7 +789,7 @@ const SME_SAMPLES = {
     }
 };
 
-function loadSmePreset(presetKey) {
+function loadSmePreset(presetKey, silent = false) {
     const data = SME_SAMPLES[presetKey];
     if (!data) return;
 
@@ -816,7 +805,7 @@ function loadSmePreset(presetKey) {
         document.getElementById('audio-source-label').innerText = `Preset Audio: ${data.alias}`;
     }
 
-    showToast(`Loaded sample audio and transcript for ${data.alias}`, 'info');
+    if (!silent) showToast(`Loaded sample audio and transcript for ${data.alias}`, 'info');
 }
 
 // Polish Nigerian business speech, locations, and phone numbers
@@ -918,8 +907,8 @@ async function startAudioRecording() {
         Sabi.isRecording = true;
 
         const recBtn = document.getElementById('btn-record-audio');
-        recBtn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2 animate-pulse';
-        recBtn.innerHTML = `<span>⏹️</span><span>Stop Recording (<span id="record-timer">00:00</span>)</span>`;
+        recBtn.className = 'btn btn-danger';
+        recBtn.innerHTML = `<span>Stop Recording (<span id="record-timer">00:00</span>)</span>`;
 
         const transcriptBox = document.getElementById('sme-text');
         transcriptBox.value = '';
@@ -1006,8 +995,8 @@ async function stopAudioRecording() {
     Sabi.isRecording = false;
 
     const recBtn = document.getElementById('btn-record-audio');
-    recBtn.className = 'bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center space-x-2';
-    recBtn.innerHTML = `<span>🎙️</span><span>Record Voice Note</span>`;
+    recBtn.className = 'btn btn-dark';
+    recBtn.innerHTML = `<span>Record Voice Note</span>`;
 
     const transcriptBox = document.getElementById('sme-text');
     let currentText = transcriptBox.value.trim();
@@ -1061,7 +1050,7 @@ async function processSmeBrief() {
 
     const btn = document.getElementById('btn-process-sme');
     btn.disabled = true;
-    btn.innerHTML = '⟳ Sanitising Nigerian PII & Extracting Brief...';
+    btn.innerHTML = 'Sanitising Nigerian PII & Extracting Brief...';
 
     try {
         let res, briefData;
@@ -1091,7 +1080,7 @@ async function processSmeBrief() {
             if (!text) {
                 showToast('Please record audio, upload an audio file, or enter transcript text first.', 'warning');
                 btn.disabled = false;
-                btn.innerHTML = '🛡️ Sanitise & Extract Micro-Project Brief';
+                btn.innerHTML = 'Sanitise & Extract Micro-Project Brief';
                 return;
             }
 
@@ -1113,7 +1102,7 @@ async function processSmeBrief() {
         showToast('Error processing brief: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '🛡️ Sanitise & Extract Micro-Project Brief';
+        btn.innerHTML = 'Sanitise & Extract Micro-Project Brief';
     }
 }
 
@@ -1134,7 +1123,7 @@ function renderSmeResult(brief) {
     document.getElementById('sme-brief-effort').innerText = `${brief.effort_days} Days (${brief.effort_estimate})`;
     
     const riskBadge = document.getElementById('sme-privacy-risk');
-    riskBadge.innerText = `Privacy Risk: ${brief.privacy_risk_level.toUpperCase()}`;
+    riskBadge.innerText = `Privacy risk: ${brief.privacy_risk_level}`;
     if (brief.privacy_risk_level === 'high') {
         riskBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-800';
     } else if (brief.privacy_risk_level === 'medium') {
@@ -1144,7 +1133,7 @@ function renderSmeResult(brief) {
     }
 
     const delivList = document.getElementById('sme-deliverables-list');
-    delivList.innerHTML = brief.deliverables.map(d => `<li class="flex items-start space-x-2"><span class="text-emerald-600 font-bold">✓</span><span>${d}</span></li>`).join('');
+    delivList.innerHTML = brief.deliverables.map(d => `<li class="flex items-start space-x-2"><span class="tick" aria-hidden="true"></span><span>${d}</span></li>`).join('');
 
     const skillContainer = document.getElementById('sme-skill-tags');
     skillContainer.innerHTML = brief.skill_tags.map(t => `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded font-mono font-medium">${t}</span>`).join(' ');
@@ -1231,3 +1220,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+// ---------------------------------------------------------------------------
+// VIEW ROUTING: overview page and app share one document, switched by URL hash
+// (#app or #app/<tab> opens the app; anything else shows the overview)
+// ---------------------------------------------------------------------------
+function route() {
+    const h = location.hash;
+    const inApp = h.startsWith('#app');
+    document.getElementById('view-landing').classList.toggle('hidden', inApp);
+    document.getElementById('view-app').classList.toggle('hidden', !inApp);
+    if (inApp) {
+        const tab = h.split('/')[1];
+        if (['student', 'employer', 'radar', 'sme'].includes(tab)) switchTab(tab);
+        window.scrollTo(0, 0);
+    } else if (!h || h === '#') {
+        window.scrollTo(0, 0);
+    }
+}
+window.addEventListener('hashchange', route);
+document.addEventListener('DOMContentLoaded', route);
+
+
+// ---------------------------------------------------------------------------
+// DATA SAVER (lite mode): the mode is chosen in the page head before heavy files
+// load. This switch applies instantly and the choice is remembered for next visit.
+// ---------------------------------------------------------------------------
+function syncModeSwitch() {
+    const lite = document.documentElement.dataset.mode === 'lite';
+    document.querySelectorAll('.mode-switch').forEach(b => b.setAttribute('aria-checked', String(lite)));
+}
+
+function toggleMode() {
+    const next = document.documentElement.dataset.mode === 'lite' ? 'full' : 'lite';
+    document.documentElement.dataset.mode = next;
+    try { localStorage.setItem('sabi-mode', next); } catch (e) { /* storage blocked */ }
+    if (next === 'full' && window.loadFullAssets) window.loadFullAssets();
+    syncModeSwitch();
+    showToast(next === 'lite' ? 'Data saver on. Future visits will load fewer files.' : 'Data saver off.', 'info');
+}
+
+document.addEventListener('DOMContentLoaded', syncModeSwitch);

@@ -353,12 +353,12 @@ class TestServer:
     def test_landing_page_spa(self):
         res = self.client.get("/")
         assert res.status_code == 200
-        html = res.text
-        assert "SABI" in html
-        assert "Student Portal" in html
-        assert "Employer Pipeline" in html
-        assert "Radar Analytics" in html
-        assert "SME Rails" in html
+        html_lower = res.text.lower()
+        assert "sabi" in html_lower
+        assert "student portal" in html_lower
+        assert "employer pipeline" in html_lower
+        assert "radar analytics" in html_lower
+        assert "sme rails" in html_lower
 
     def test_pack_download(self):
         res = self.client.get("/api/dayone/pack/1/download")
