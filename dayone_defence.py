@@ -390,7 +390,11 @@ class GroqProvider(LLMProvider):
         from dotenv import load_dotenv
         load_dotenv()
         from groq import Groq
-        self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
+        self.client = Groq(
+            api_key=api_key or os.environ.get("GROQ_API_KEY"),
+            timeout=8.0,
+            max_retries=0,
+        )
         self.model = model
 
     def _call(self, messages: list[dict], response_schema: dict | None = None) -> dict:
@@ -618,6 +622,18 @@ class DefenceEngine:
 
     def __init__(self, provider: LLMProvider | None = None):
         self.provider = provider or MockProvider()
+        self.fallback_used = False
+
+    def _generate(self, messages: list[dict], response_schema: dict | None = None) -> dict:
+        """Use the configured provider and fall back locally if it is unavailable."""
+        try:
+            return self.provider.generate(messages, response_schema)
+        except Exception:
+            if isinstance(self.provider, MockProvider):
+                raise
+            self.provider = MockProvider()
+            self.fallback_used = True
+            return self.provider.generate(messages, response_schema)
 
     def build_session(
         self,
@@ -680,7 +696,11 @@ class DefenceEngine:
         -------
         DefenceResponse with claims extracted, verified, and classified.
         """
-        question = next(q for q in session.questions if q.index == question_index)
+        question = next((q for q in session.questions if q.index == question_index), None)
+        if question is None:
+            raise ValueError(f"Unknown defence question index: {question_index}")
+        if question_index != len(session.responses) + 1:
+            raise ValueError(f"Expected defence question {len(session.responses) + 1}")
 
         # Step 1: Extract verifiable claims from the answer (LLM)
         claims = self._extract_claims(question, student_answer)
@@ -713,7 +733,7 @@ class DefenceEngine:
             cell_or_location=question.cell_or_location,
             question_text=question.question_text,
         )
-        result = self.provider.generate(
+        result = self._generate(
             messages=[
                 {"role": "system", "content": CFO_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
@@ -729,7 +749,7 @@ class DefenceEngine:
             question_text=question.question_text,
             student_answer=student_answer,
         )
-        result = self.provider.generate(
+        result = self._generate(
             messages=[
                 {"role": "system", "content": CFO_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
@@ -845,7 +865,7 @@ class DefenceEngine:
             student_answer=student_answer,
             claims_json=claims_json,
         )
-        result = self.provider.generate(
+        result = self._generate(
             messages=[
                 {"role": "system", "content": CFO_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},

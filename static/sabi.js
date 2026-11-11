@@ -307,6 +307,8 @@ async function solvePlan() {
 
         if (!res.ok) throw new Error('Solver failed');
         const data = await res.json();
+        // Ignore a stale response if the role or constraints changed in flight.
+        if (requestId !== Sabi.planSolveSequence) return;
 
         document.getElementById('stat-total-hours').innerText = `${data.total_hours} hrs`;
         document.getElementById('stat-total-mb').innerText = `${data.total_mb} MB`;
@@ -505,9 +507,8 @@ async function startDefenceSession() {
                 role: role
             })
         });
-
-        if (!res.ok) throw new Error('Could not initiate defence session');
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not initiate defence session');
 
         Sabi.currentSessionId = data.session_id;
         Sabi.defenceQuestions = data.questions;
@@ -516,7 +517,12 @@ async function startDefenceSession() {
         document.getElementById('defence-chat-card').classList.remove('hidden');
         document.getElementById('defence-start-container').classList.add('hidden');
         renderCurrentDefenceQuestion();
-        showToast('Mrs. Bello is ready for your defence.', 'info');
+        showToast(
+            data.provider_fallback
+                ? 'Mrs. Bello is ready in local backup mode; cloud evaluation is unavailable.'
+                : 'Mrs. Bello is ready for your defence.',
+            data.provider_fallback ? 'warning' : 'info'
+        );
     } catch (err) {
         showToast('Error starting defence: ' + err.message, 'error');
     } finally {
@@ -533,8 +539,8 @@ function renderCurrentDefenceQuestion() {
 
     const q = Sabi.defenceQuestions[Sabi.currentQuestionIndex];
     document.getElementById('defence-round-indicator').innerText = `Turn ${Sabi.currentQuestionIndex + 1} of ${Sabi.defenceQuestions.length}`;
-    document.getElementById('defence-question-target').innerText = `Target: ${q.where || 'Model!N6'}`;
-    document.getElementById('mrs-bello-text').innerText = q.question;
+    document.getElementById('defence-question-target').innerText = `Target: ${q.cell_or_location || q.where || 'Model!N6'}`;
+    document.getElementById('mrs-bello-text').innerText = q.persona_question || q.question || q.question_text || 'Walk me through how your model works.';
 
     document.getElementById('defence-answer-input').value = '';
     document.getElementById('defence-eval-status').classList.add('hidden');
@@ -564,24 +570,36 @@ async function submitDefenceAnswer() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 session_id: Sabi.currentSessionId,
-                question_index: Sabi.currentQuestionIndex,
+                // The interface tracks questions from zero; the defence API
+                // and engine use one-based question numbers.
+                question_index: Sabi.currentQuestionIndex + 1,
                 answer: answer
             })
         });
 
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Could not submit defence answer');
         
         const evalBox = document.getElementById('defence-eval-status');
         evalBox.classList.remove('hidden');
         
-        const isGood = data.classification === 'ACCURATE_MECHANISM' || data.classification === 'PARTIAL_INTUITION';
+        const isGood = ['acknowledged_and_fixed', 'defended_with_valid_reasoning'].includes(data.classification);
+        const verifiedCount = Array.isArray(data.claims_verified)
+            ? data.claims_verified.filter(claim => claim.verified).length
+            : 0;
+        const detectedCount = Array.isArray(data.claims_detected)
+            ? data.claims_detected.length
+            : 0;
+        const providerNote = data.provider_fallback
+            ? ' Local backup evaluator used because cloud evaluation is unavailable.'
+            : '';
         evalBox.className = `p-4 rounded-lg border text-sm font-medium ${isGood ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`;
         evalBox.innerHTML = `
             <div class="flex items-center justify-between mb-1">
                 <span class="font-semibold text-xs">Verdict: ${data.classification}</span>
-                <span class="text-xs">${data.claims_verified} of ${data.claims_detected} formula claims verified</span>
+                <span class="text-xs">${verifiedCount} of ${detectedCount} formula claims verified</span>
             </div>
-            <p class="text-xs opacity-90">Gate: ${data.understanding_gate ? 'Passed Understanding Gate' : 'Under Review'} · Recommended Level: ${data.recommended_level}</p>
+            <p class="text-xs opacity-90">Session: ${data.session_status} · Gate: ${data.understanding_gate ? 'Passed' : 'Not yet passed'} · Recommended Level: ${data.recommended_level}${providerNote}</p>
         `;
 
         if (data.evidence_brief_id) {

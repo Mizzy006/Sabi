@@ -217,7 +217,15 @@ def solve(profile: StudentProfile) -> Plan:
     role = profile.target_role
     weights = ROLE_WEIGHTS.get(role, {})
     W = profile.deadline_weeks
-    resources = RESOURCE_LIBRARY[:]
+    # Keep each roadmap focused on skills that matter to the selected role.
+    # Previously every role assigned non-zero demand to almost every skill,
+    # so a generous time budget selected the whole library and role changes
+    # only shuffled the same resources between weeks.
+    role_relevance_threshold = 0.7
+    resources = [
+        r for r in RESOURCE_LIBRARY
+        if any(weights.get(skill, 0) >= role_relevance_threshold for skill in r.skills)
+    ]
 
     # Filter by device/offline constraints
     if profile.offline_only:
@@ -351,7 +359,7 @@ def solve(profile: StudentProfile) -> Plan:
         weekly.append({
             "week": w,
             "resources": [{"id": s.resource.id, "title": s.resource.title, "hours": s.resource.hours,
-                           "mb": s.resource.mb} for s in week_slots],
+                           "mb": s.resource.mb, "offline": s.resource.offline} for s in week_slots],
             "total_hours": sum(s.resource.hours for s in week_slots),
             "total_mb": sum(s.resource.mb for s in week_slots),
         })

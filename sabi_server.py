@@ -226,7 +226,7 @@ class DefenceStartRequest(BaseModel):
 
 class DefenceAnswerRequest(BaseModel):
     session_id: str
-    question_index: int
+    question_index: int = Field(..., ge=1)
     answer: str
 
 class PlannerRequest(BaseModel):
@@ -475,7 +475,13 @@ def defence_start(req: DefenceStartRequest):
         }]
 
     provider_name = "groq" if os.environ.get("GROQ_API_KEY") else "mock"
-    engine = DefenceEngine(get_provider(provider_name))
+    try:
+        engine = DefenceEngine(get_provider(provider_name))
+    except Exception:
+        if provider_name != "groq":
+            raise
+        engine = DefenceEngine(get_provider("mock"))
+        engine.fallback_used = True
     session = engine.build_session(req.student_id, req.seed, wb_path, qs)
 
     session_id = uuid.uuid4().hex[:12]
@@ -491,6 +497,7 @@ def defence_start(req: DefenceStartRequest):
         "role": req.role,
         "scenario": scenario,
         "questions": [q.model_dump() for q in session.questions],
+        "provider_fallback": engine.fallback_used,
     }
 
 
@@ -506,6 +513,13 @@ def defence_answer(req: DefenceAnswerRequest):
     role = entry.get("role", "graduate_supply_chain_analyst")
     scenario = entry.get("scenario", get_scenario(role))
 
+    expected_index = len(session.responses) + 1
+    if req.question_index != expected_index:
+        raise HTTPException(
+            409,
+            detail=f"Answer question {expected_index} next.",
+        )
+
     response = engine.process_answer(session, req.question_index, req.answer)
 
     result = {
@@ -516,6 +530,7 @@ def defence_answer(req: DefenceAnswerRequest):
         "session_status": session.overall_outcome,
         "understanding_gate": session.understanding_gate_passed,
         "recommended_level": session.recommended_level,
+        "provider_fallback": engine.fallback_used,
     }
 
     if len(session.responses) == len(session.questions):
