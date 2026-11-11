@@ -1257,9 +1257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize Auth Session and Tasks
+    // Initialize the auth session. Task data is fetched when its tab is opened.
     initAuth();
-    loadEmployerTasks();
 });
 
 
@@ -1686,7 +1685,7 @@ async function handleManualTaskSubmit(event) {
 
 // ---------------------------------------------------------------------------
 // DATA SAVER (lite mode): the mode is chosen in the page head before heavy files
-// load. This switch applies instantly and the choice is remembered for next visit.
+// load, so changing modes reloads the current route with the matching asset set.
 // ---------------------------------------------------------------------------
 function syncModeSwitch() {
     const lite = document.documentElement.dataset.mode === 'lite';
@@ -1695,13 +1694,15 @@ function syncModeSwitch() {
 
 function toggleMode() {
     const next = document.documentElement.dataset.mode === 'lite' ? 'full' : 'lite';
-    document.documentElement.dataset.mode = next;
-    try { localStorage.setItem('sabi-mode', next); } catch (e) { /* storage blocked */ }
-    if (next === 'full' && window.loadFullAssets) window.loadFullAssets();
-    if (next === 'full' && window.loadReactWorkspace) window.loadReactWorkspace();
-    syncModeSwitch();
-    window.dispatchEvent(new CustomEvent('sabi:mode', { detail: { mode: next } }));
-    showToast(next === 'lite' ? 'Data saver on. Future visits will load fewer files.' : 'Data saver off.', 'info');
+    try {
+        localStorage.setItem('sabi-mode', next);
+    } catch (e) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sabi-mode', next);
+        window.location.assign(url.toString());
+        return;
+    }
+    window.location.reload();
 }
 
 document.addEventListener('DOMContentLoaded', syncModeSwitch);

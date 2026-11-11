@@ -68,7 +68,7 @@ pip install openpyxl pywin32 pydantic fastapi uvicorn pulp qrcode[pil] groq
 
 ### Frontend workspace
 
-The standard workspace shell, candidate pipeline, skills diagnostic, open challenges, My Learning, Tasks & SME Studio, and Talent Insights use React. The data-saver mode keeps the lightweight HTML fallback, uses a compact system-font layout, and does not request the React bundle or full-mode fonts. Rebuild the local production assets after changing React components or styles:
+The standard workspace shell, candidate pipeline, skills diagnostic, open challenges, My Learning, Tasks & SME Studio, and Talent Insights use React. The data-saver mode keeps the lightweight HTML fallback, uses a compact system-font layout, and does not request the React bundle or full-mode fonts. Employer task data loads when its tab opens, and sample voice audio waits for an explicit play action. Switching modes reloads the current route so each mode gets the correct UI and assets. Rebuild the local production assets after changing React components or styles:
 
 ```bash
 cd frontend

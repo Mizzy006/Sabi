@@ -7,7 +7,16 @@
     <script>
         (function () {
             var d = document.documentElement, m = null;
-            try { m = localStorage.getItem('sabi-mode'); } catch (e) {}
+            try {
+                var url = new URL(location.href);
+                var requested = url.searchParams.get('sabi-mode');
+                if (requested === 'lite' || requested === 'full') {
+                    m = requested;
+                    url.searchParams.delete('sabi-mode');
+                    history.replaceState(null, '', url.pathname + url.search + url.hash);
+                }
+            } catch (e) {}
+            if (m !== 'lite' && m !== 'full') { try { m = localStorage.getItem('sabi-mode'); } catch (e) {} }
             if (m !== 'lite' && m !== 'full') {
                 var c = navigator.connection || {};
                 m = (c.saveData || /2g$/.test(c.effectiveType || '')) ? 'lite' : 'full';
@@ -1153,7 +1162,7 @@
                             <!-- Embedded HTML5 Audio Player -->
                             <div id="sme-audio-player-container" class="hidden bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-1">
                                 <span id="audio-source-label" class="block text-xs font-mono font-semibold text-emerald-800">Audio Loaded</span>
-                                <audio id="sme-audio-player" controls class="w-full h-8"></audio>
+                                <audio id="sme-audio-player" controls preload="none" class="w-full h-8"></audio>
                             </div>
                         </div>
 
@@ -1352,14 +1361,14 @@
     </div>
 
     <!-- App Scripts with cache-busting version query -->
-    <script src="/static/sabi.js?v=9.0"></script>
+    <script src="/static/sabi.js?v=11.0"></script>
     <script>
         // Render the default role synchronously; DOMContentLoaded runs the planner once.
         const roleEl = document.getElementById('plan-role');
         if (roleEl && typeof updateScenarioUI === 'function') {
             updateScenarioUI(roleEl.value);
         }
-        if (typeof loadSmePreset === 'function') {
+        if (typeof loadSmePreset === 'function' && document.documentElement.dataset.mode === 'full') {
             loadSmePreset('adebayo', true);
         }
         window.loadReactWorkspace = function () {
