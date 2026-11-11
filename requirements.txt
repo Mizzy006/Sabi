@@ -5,7 +5,7 @@ python-dotenv
 jinja2
 python-multipart
 openpyxl
-pulp
+pulp>=3.3,<4
 highspy
 qrcode[pil]
 groq
