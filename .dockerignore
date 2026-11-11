@@ -1,0 +1,17 @@
+.git
+.env
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+.pytest_cache
+frontend/node_modules
+frontend/dist
+packs
+briefs
+voice_notes
+candidate_contacts.json
+contact_requests.json
+employer_tasks.json
+*.log

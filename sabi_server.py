@@ -16,6 +16,7 @@ load_dotenv()
 
 import json
 import math
+import mimetypes
 import os
 import re
 import shutil
@@ -27,7 +28,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -73,7 +74,6 @@ os.makedirs(BRIEFS_DIR, exist_ok=True)
 os.makedirs(VOICE_NOTES_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-app.mount("/voice_notes", StaticFiles(directory=VOICE_NOTES_DIR), name="voice_notes")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # In-memory stores
@@ -121,6 +121,22 @@ def _blob_put_bytes(pathname: str, body: bytes, content_type: str = "application
         pathname, body, access="private", content_type=content_type,
         allow_overwrite=True, add_random_suffix=False,
     )
+
+
+@app.get("/voice_notes/{filename}")
+def get_voice_note(filename: str):
+    safe_name = os.path.basename(filename)
+    local_path = os.path.join(VOICE_NOTES_DIR, safe_name)
+    if os.path.isfile(local_path):
+        return FileResponse(local_path, media_type=mimetypes.guess_type(safe_name)[0] or "application/octet-stream")
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        try:
+            content = _blob_get_bytes(f"sabi/audio/{safe_name}")
+            return Response(content, media_type=mimetypes.guess_type(safe_name)[0] or "application/octet-stream")
+        except Exception as exc:
+            if not _is_blob_not_found(exc):
+                raise
+    raise HTTPException(status_code=404, detail="Audio file not found.")
 
 
 def _is_blob_not_found(exc: Exception) -> bool:
@@ -1021,12 +1037,18 @@ async def sme_upload_audio(
     """Accept real audio recording/file upload, transcribe, redact PII and return brief."""
     filename = audio.filename or "recording.webm"
     ext = os.path.splitext(filename)[1].lower() or ".webm"
-    safe_name = f"{uuid.uuid4().hex[:8]}_{filename.replace(' ', '_')}"
+    safe_original = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(filename).replace(" ", "_"))
+    safe_name = f"{uuid.uuid4().hex[:8]}_{safe_original}"
     save_path = os.path.join(VOICE_NOTES_DIR, safe_name)
 
     content = await audio.read()
     with open(save_path, "wb") as f:
         f.write(content)
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        _blob_put_bytes(
+            f"sabi/audio/{safe_name}", content,
+            audio.content_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream",
+        )
 
     transcribed_text = transcript
     active_groq_key = groq_key or os.environ.get("GROQ_API_KEY")

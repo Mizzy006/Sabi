@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sabi-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/scenarios
+    envVars:
+      - key: SABI_DATA_DIR
+        value: /tmp/sabi-runtime
+      - key: PORT
+        value: "10000"
+      - key: BLOB_READ_WRITE_TOKEN
+        sync: false
