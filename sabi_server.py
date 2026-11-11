@@ -62,6 +62,8 @@ BRIEFS_DIR = os.path.join(BASE_DIR, "briefs")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 VOICE_NOTES_DIR = os.path.join(BASE_DIR, "voice_notes")
+CONTACT_REQUESTS_FILE = os.path.join(BASE_DIR, "contact_requests.json")
+CANDIDATE_CONTACTS_FILE = os.path.join(BASE_DIR, "candidate_contacts.json")
 
 os.makedirs(PACKS_DIR, exist_ok=True)
 os.makedirs(BRIEFS_DIR, exist_ok=True)
@@ -76,6 +78,20 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # In-memory stores
 _briefs: dict[str, EvidenceBrief] = {}
 _defence_sessions: dict[str, dict] = {}
+
+
+def _load_json_list(path: str) -> list[dict]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _save_json_list(path: str, data: list[dict]) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def _ensure_initial_candidates():
@@ -220,9 +236,12 @@ class PackGenerateRequest(BaseModel):
 
 class DefenceStartRequest(BaseModel):
     student_id: str = "student_001"
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
     seed: int = 1
     role: str = "graduate_supply_chain_analyst"
     workbook_path: Optional[str] = None
+    task_id: Optional[str] = None
 
 class DefenceAnswerRequest(BaseModel):
     session_id: str
@@ -265,7 +284,23 @@ class EmployerTaskCreate(BaseModel):
     deliverables: List[str]
     skill_tags: List[str]
     posted_by: str = "Hiring Partner"
+    owner_email: Optional[str] = None
     effort_estimate: Optional[str] = "3-5 days"
+
+
+class ContactRequestCreate(BaseModel):
+    brief_id: str
+    employer_name: str
+    employer_email: str
+    employer_organization: Optional[str] = None
+    message: str = Field(..., min_length=10, max_length=1000)
+
+
+class ContactRequestDecision(BaseModel):
+    request_id: str
+    candidate_name: str
+    candidate_email: Optional[str] = None
+    decision: str
 
 
 # ---------------------------------------------------------------------------
@@ -485,11 +520,20 @@ def defence_start(req: DefenceStartRequest):
     session = engine.build_session(req.student_id, req.seed, wb_path, qs)
 
     session_id = uuid.uuid4().hex[:12]
+    if req.task_id:
+        task = next((t for t in load_employer_tasks() if t.get("id") == req.task_id), None)
+        if not task:
+            raise HTTPException(404, detail="Task not found.")
+        if task.get("role_track") != req.role:
+            raise HTTPException(400, detail="This task does not match the selected role.")
     _defence_sessions[session_id] = {
         "engine": engine,
         "session": session,
         "role": req.role,
         "scenario": scenario,
+        "task_id": req.task_id,
+        "student_name": req.student_name or req.student_id,
+        "student_email": req.student_email,
     }
 
     return {
@@ -561,6 +605,15 @@ def defence_answer(req: DefenceAnswerRequest):
         except Exception:
             pass
 
+        if entry.get("student_email"):
+            contacts = [c for c in _load_json_list(CANDIDATE_CONTACTS_FILE) if c.get("brief_id") != brief.brief_id]
+            contacts.append({
+                "brief_id": brief.brief_id,
+                "candidate_name": entry.get("student_name") or session.student_id,
+                "candidate_email": entry["student_email"].strip().lower(),
+            })
+            _save_json_list(CANDIDATE_CONTACTS_FILE, contacts)
+
         result["evidence_brief_id"] = brief.brief_id
         result["evidence_brief_url"] = f"/verify/{brief.brief_id}"
         result["evidence_summary"] = {
@@ -568,6 +621,24 @@ def defence_answer(req: DefenceAnswerRequest):
             "understanding_gate": brief.signals.understanding_gate,
             "skill_level": brief.skills[0].level.value if brief.skills else "Emerging",
         }
+        task_id = entry.get("task_id")
+        if task_id:
+            tasks = load_employer_tasks()
+            task = next((t for t in tasks if t.get("id") == task_id), None)
+            if task:
+                submissions = task.setdefault("submissions", [])
+                if not any(s.get("brief_id") == brief.brief_id for s in submissions):
+                    submissions.append({
+                        "brief_id": brief.brief_id,
+                        "candidate_id": session.student_id,
+                        "candidate_alias": f"CANDIDATE-{session.student_id[:8].upper()}",
+                        "candidate_name": entry.get("student_name") or session.student_id,
+                        "completed_at": datetime.now(timezone.utc).isoformat(),
+                        "status": session.overall_outcome,
+                        "skill_level": brief.skills[0].level.value if brief.skills else "Emerging",
+                    })
+                    task["applicants_count"] = len(submissions)
+                    save_employer_tasks(tasks)
 
     return result
 
@@ -617,6 +688,90 @@ def list_candidates(blind: bool = True):
         b_view = apply_blind_mode(b) if blind else b
         results.append(b_view.model_dump(mode="json"))
     return results
+
+
+@app.post("/api/contact-requests")
+def create_contact_request(req: ContactRequestCreate):
+    """Let an employer request an introduction without exposing candidate contact details."""
+    brief = _briefs.get(req.brief_id)
+    if not brief:
+        json_path = os.path.join(BRIEFS_DIR, f"{req.brief_id}.json")
+        if os.path.isfile(json_path):
+            with open(json_path, encoding="utf-8") as f:
+                brief = EvidenceBrief(**json.load(f))
+            _briefs[brief.brief_id] = brief
+    if not brief:
+        raise HTTPException(404, detail="Candidate result not found.")
+
+    requests = _load_json_list(CONTACT_REQUESTS_FILE)
+    employer_email = req.employer_email.strip().lower()
+    existing = next((r for r in requests if r.get("brief_id") == req.brief_id
+                     and r.get("employer_email") == employer_email and r.get("status") == "pending"), None)
+    if existing:
+        raise HTTPException(409, detail="You already have a pending request for this candidate.")
+
+    contact = next((c for c in _load_json_list(CANDIDATE_CONTACTS_FILE) if c.get("brief_id") == req.brief_id), {})
+    record = {
+        "request_id": uuid.uuid4().hex[:12],
+        "brief_id": req.brief_id,
+        "candidate_name": contact.get("candidate_name") or brief.candidate_name or brief.candidate_alias,
+        "candidate_email": contact.get("candidate_email"),
+        "candidate_alias": brief.candidate_alias,
+        "employer_name": req.employer_name.strip(),
+        "employer_email": employer_email,
+        "employer_organization": (req.employer_organization or "").strip(),
+        "message": req.message.strip(),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    requests.append(record)
+    _save_json_list(CONTACT_REQUESTS_FILE, requests)
+    return {"status": "success", "request_id": record["request_id"]}
+
+
+@app.get("/api/student/contact-requests")
+def list_student_contact_requests(email: str, name: str):
+    """Show introduction requests addressed to this student."""
+    email = email.strip().lower()
+    name = name.strip().lower()
+    requests = _load_json_list(CONTACT_REQUESTS_FILE)
+    results = []
+    for record in requests:
+        contact_email = (record.get("candidate_email") or "").lower()
+        candidate_name = (record.get("candidate_name") or "").strip().lower()
+        if (contact_email and contact_email == email) or (not contact_email and candidate_name == name):
+            results.append({k: v for k, v in record.items() if k != "candidate_email"})
+    return {"status": "success", "requests": results}
+
+
+@app.post("/api/student/contact-requests/decision")
+def decide_contact_request(decision: ContactRequestDecision):
+    if decision.decision not in {"accepted", "declined"}:
+        raise HTTPException(400, detail="Choose accept or decline.")
+    requests = _load_json_list(CONTACT_REQUESTS_FILE)
+    record = next((r for r in requests if r.get("request_id") == decision.request_id), None)
+    if not record:
+        raise HTTPException(404, detail="Contact request not found.")
+    if (record.get("candidate_name") or "").strip().lower() != decision.candidate_name.strip().lower():
+        raise HTTPException(403, detail="This request belongs to another candidate.")
+    record["status"] = decision.decision
+    record["responded_at"] = datetime.now(timezone.utc).isoformat()
+    record["shared_candidate_email"] = decision.candidate_email.strip().lower() if decision.decision == "accepted" and decision.candidate_email else None
+    _save_json_list(CONTACT_REQUESTS_FILE, requests)
+    return {"status": "success", "decision": record["status"]}
+
+
+@app.get("/api/employer/contact-requests")
+def list_employer_contact_requests(email: str):
+    email = email.strip().lower()
+    records = [r for r in _load_json_list(CONTACT_REQUESTS_FILE) if r.get("employer_email") == email]
+    results = []
+    for record in records:
+        item = {k: v for k, v in record.items() if k not in {"candidate_email", "shared_candidate_email"}}
+        if record.get("status") == "accepted":
+            item["candidate_email"] = record.get("shared_candidate_email")
+        results.append(item)
+    return {"status": "success", "requests": results}
 
 
 # ---------------------------------------------------------------------------
@@ -831,6 +986,18 @@ DEMO_USERS: List[Dict[str, Any]] = [
         "alias": "Emeka Obi"
     },
     {
+        "id": "usr_chidi_demo_003",
+        "email": "chidi@unn.edu.ng",
+        "role": "student",
+        "name": "Chidi Nnamani",
+        "organization": "University of Nigeria, Nsukka",
+        "department": "Business Administration",
+        "level": "Working",
+        "verified_tasks_count": 1,
+        "alias": "Chidi Nnamani",
+        "demo_candidate": "CANDIDATE-DEMO-002"
+    },
+    {
         "id": "usr_kemi_003",
         "email": "kemi@moniepoint.com",
         "role": "employer",
@@ -849,6 +1016,29 @@ DEMO_USERS: List[Dict[str, Any]] = [
         "posted_tasks_count": 1
     }
 ]
+
+
+def _seed_demo_candidate_contacts() -> None:
+    """Link the sample candidate briefs to the student demo accounts."""
+    demo_emails = {
+        "CANDIDATE-DEMO-001": "ada@unilag.edu.ng",
+        "CANDIDATE-DEMO-002": "chidi@unn.edu.ng",
+    }
+    contacts = _load_json_list(CANDIDATE_CONTACTS_FILE)
+    by_brief = {contact.get("brief_id"): contact for contact in contacts}
+    for brief in _briefs.values():
+        email = demo_emails.get(brief.candidate_alias)
+        if not email:
+            continue
+        by_brief[brief.brief_id] = {
+            "brief_id": brief.brief_id,
+            "candidate_name": brief.candidate_name or brief.candidate_alias,
+            "candidate_email": email,
+        }
+    _save_json_list(CANDIDATE_CONTACTS_FILE, list(by_brief.values()))
+
+
+_seed_demo_candidate_contacts()
 
 EMPLOYER_TASKS_FILE = os.path.join(BASE_DIR, "employer_tasks.json")
 
@@ -980,11 +1170,29 @@ def list_employer_tasks(role: Optional[str] = None):
     tasks = load_employer_tasks()
     if role:
         tasks = [t for t in tasks if t.get("role_track") == role]
+    # Submission details are private to the task owner.
+    tasks = [{k: v for k, v in t.items() if k not in {"submissions", "owner_email"}} for t in tasks]
     return {
         "status": "success",
         "count": len(tasks),
         "tasks": tasks
     }
+
+
+@app.get("/api/employer/managed-tasks")
+def list_managed_employer_tasks(email: str, name: Optional[str] = None, organization: Optional[str] = None):
+    """Return this employer's tasks and the candidates who completed them."""
+    clean_email = email.strip().lower()
+    tasks = load_employer_tasks()
+    owned = [
+        task for task in tasks
+        if (task.get("owner_email") and task["owner_email"].strip().lower() == clean_email)
+        or (not task.get("owner_email") and (
+            (name and task.get("posted_by", "").split(" (", 1)[0].strip().lower() == name.strip().lower())
+            or (organization and task.get("company_name", "").strip().lower() == organization.strip().lower())
+        ))
+    ]
+    return {"status": "success", "count": len(owned), "tasks": owned}
 
 
 @app.post("/api/employer/tasks")
@@ -1011,6 +1219,7 @@ def create_employer_task(task_in: EmployerTaskCreate):
         "deliverables": task_in.deliverables,
         "skill_tags": task_in.skill_tags,
         "posted_by": task_in.posted_by,
+        "owner_email": task_in.owner_email,
         "posted_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "applicants_count": 0,
         "status": "Active"

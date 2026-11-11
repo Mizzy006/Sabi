@@ -40,8 +40,8 @@
   "scenario_version": "0.1",
   "instance_seed_hash": "6b86b273ff34fce1",
   "created_at": "2026-11-08T12:21:12.481777Z",
-  "sha256_digest": "d5ae9d124366b503e5c2c2a141c3f2102ebeecc2e24e2321ffb09796a86eb986",
+  "sha256_digest": "7ab751e92097fff349633323ebb3d7f6e67f1fb31c4e8f72bd77d06b3a7600be",
   "verification_url": "/verify/a7a59d5e49ab",
   "qr_code_path": "C:\\Users\\USER\\Desktop\\Sabi\\evidence_brief_demo\\qr_a7a59d5e49ab.png",
-  "limitations_note": "This brief records performance on a single, time-boxed scenario. It does NOT claim the candidate can handle every variant of this problem, nor does it measure soft skills, domain expertise beyond the scenario scope, or long-term job performance. Tier A evidence is auto-verified and capped at 'Working'; 'Strong' always requires independent human review (Tier B+). The system raises the cost of faking until honest practice is the cheapest route — it does not claim to be unfakeable."
+  "limitations_note": "This result shows how the candidate performed on one timed task. It does not show how they would handle every version of the problem, measure people skills, or predict long-term job performance. Automated checks can award up to 'Working'. A 'Strong' rating always needs a separate human review. These checks make dishonest work harder to pass, but they cannot prevent all cheating."
 }

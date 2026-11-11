@@ -98,13 +98,11 @@ class EvidenceBrief(BaseModel):
 # ---------------------------------------------------------------------------
 
 _DEFAULT_LIMITATIONS = (
-    "This brief records performance on a single, time-boxed scenario. "
-    "It does NOT claim the candidate can handle every variant of this problem, "
-    "nor does it measure soft skills, domain expertise beyond the scenario scope, "
-    "or long-term job performance. Tier A evidence is auto-verified and capped at "
-    "'Working'; 'Strong' always requires independent human review (Tier B+). "
-    "The system raises the cost of faking until honest practice is the cheapest route — "
-    "it does not claim to be unfakeable."
+    "This result shows how the candidate performed on one timed task. It does not "
+    "show how they would handle every version of the problem, measure people skills, "
+    "or predict long-term job performance. Automated checks can award up to "
+    "'Working'. A 'Strong' rating always needs a separate human review. "
+    "These checks make dishonest work harder to pass, but they cannot prevent all cheating."
 )
 
 
@@ -572,26 +570,26 @@ def render_brief_html(brief: EvidenceBrief, blind: bool = True) -> str:
 
   <!-- Limitations -->
   <div class="card">
-    <h2>&#x26A0;&#xFE0F; What This Brief Does NOT Claim</h2>
+    <h2>&#x26A0;&#xFE0F; What this result can and cannot tell you</h2>
     <div class="limitations">{b.limitations_note}</div>
   </div>
 
   <!-- Integrity / Verification -->
   <div class="card">
-    <h2>&#x1F512; Integrity Verification</h2>
+    <h2>&#x1F512; Check this result</h2>
     <p style="font-size:0.9em;color:#555;margin-bottom:8px;">
-      The SHA-256 digest below covers every field of this brief (except the digest itself).
-      Recompute it from the JSON to confirm nothing has been altered.
+      This record has a unique digital fingerprint based on every detail below.
+      If any detail changes, the fingerprint will no longer match. Use the verification link to check this record.
     </p>
-    <div class="digest">SHA-256: {b.sha256_digest}</div>
+    <div class="digest">Record fingerprint: {b.sha256_digest}</div>
     <div style="margin-top:12px;text-align:center;">
       {qr_html}
-      <p style="font-size:0.8em;color:#888;margin-top:4px;">Scan to verify at <code>{b.verification_url}</code></p>
+      <p style="font-size:0.8em;color:#888;margin-top:4px;">Open this link to verify: <code>{b.verification_url}</code></p>
     </div>
   </div>
 
   <footer style="text-align:center;padding:16px 0;font-size:0.8em;color:#999;">
-    Sabi Verification Platform &middot; Instance seed hash: {b.instance_seed_hash}
+    Sabi verified this record
   </footer>
 
 </div>

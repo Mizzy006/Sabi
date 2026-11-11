@@ -105,6 +105,9 @@ const Sabi = {
     currentQuestionIndex: 0,
     defenceQuestions: [],
     lastGeneratedBrief: null,
+    currentSmeBrief: null,
+    activeEmployerTaskId: null,
+    myEmployerTasks: [],
     allEmployerTasks: [],
     currentFilterTrack: 'all',
     blindMode: true,
@@ -137,11 +140,11 @@ function switchTab(tabId) {
 
     // Disallow cross-portal tab switching
     if (userRole === 'student' && ['employer', 'sme', 'radar'].includes(tabId)) {
-        showToast('Employer Portal Restricted: Sign in as an Employer to evaluate candidates or post tasks.', 'warning');
+        showToast('This area is for employers. Sign in with an employer account to review candidates or post tasks.', 'warning');
         return;
     }
     if (userRole === 'employer' && ['student', 'employer-tasks', 'student-analytics'].includes(tabId)) {
-        showToast('Student Portal: As an employer, manage tasks and candidate pipelines. Switch to Student to take tests.', 'info');
+        showToast('This area is for students. Switch to a student account to complete practice tasks.', 'info');
         return;
     }
 
@@ -212,7 +215,7 @@ function onRoleChange(role) {
     const demoBtn = document.getElementById('btn-autopsy-demo');
     const sc = SCENARIOS[role] || SCENARIOS["graduate_supply_chain_analyst"];
     if (demoBtn && sc) {
-        demoBtn.innerHTML = `<span>Demo with ${sc.role_title} Reference Pack</span>`;
+        demoBtn.innerHTML = `<span>Try a ${sc.role_title} sample</span>`;
     }
 
     // 5. Hide previous autopsy results and defence until user triggers for this role
@@ -293,9 +296,9 @@ async function solvePlan() {
     const offlineOnly = document.getElementById('plan-offline')?.checked || false;
 
     const btn = document.getElementById('btn-solve-plan');
-    const originalText = '<span>Calculate Optimal Path</span>';
+    const originalText = '<span>Update my study plan</span>';
     if (btn) {
-        btn.innerHTML = `<span class="spinner"></span> Solving with PuLP...`;
+        btn.innerHTML = `<span class="spinner"></span> Building your study plan...`;
         btn.disabled = true;
     }
 
@@ -320,13 +323,13 @@ async function solvePlan() {
         document.getElementById('stat-total-hours').innerText = `${data.total_hours} hrs`;
         document.getElementById('stat-total-mb').innerText = `${data.total_mb} MB`;
         document.getElementById('stat-total-cost').innerText = `₦${data.total_cost_ngn.toLocaleString()}`;
-        document.getElementById('stat-skill-gain').innerText = `+${(data.demand_weighted_gain * 100).toFixed(0)}%`;
+        document.getElementById('stat-skill-gain').innerText = `${Object.values(data.skill_gains || {}).filter(gain => gain > 0).length}`;
 
         const scheduleContainer = document.getElementById('plan-schedule');
         scheduleContainer.innerHTML = '';
 
         if (!data.weekly_breakdown || data.weekly_breakdown.length === 0) {
-            scheduleContainer.innerHTML = `<p class="text-sm text-slate-500 italic p-4 text-center">No modules fitted within these strict constraints. Try increasing hours or MB budget.</p>`;
+            scheduleContainer.innerHTML = `<p class="text-sm text-slate-500 italic p-4 text-center">No study materials fit these settings. Try adding more study time or mobile data.</p>`;
         } else {
             data.weekly_breakdown.forEach((w) => {
                 const weekCard = document.createElement('div');
@@ -376,7 +379,7 @@ async function solvePlan() {
             }
         }
     } catch (err) {
-        if (requestId === Sabi.planSolveSequence) showToast('Planner solver failed: ' + err.message, 'error');
+        if (requestId === Sabi.planSolveSequence) showToast('Could not update your study plan: ' + err.message, 'error');
     } finally {
         if (btn && requestId === Sabi.planSolveSequence) {
             btn.innerHTML = originalText;
@@ -391,7 +394,7 @@ async function generateDayOnePack() {
     const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
     const btn = document.getElementById('btn-generate-pack');
     btn.disabled = true;
-    btn.innerHTML = 'Generating...';
+    btn.innerHTML = 'Preparing your spreadsheet...';
 
     try {
         const res = await fetch('/api/dayone/pack/generate', {
@@ -405,16 +408,16 @@ async function generateDayOnePack() {
             document.getElementById('pack-download-section').classList.remove('hidden');
             const downloadLink = document.getElementById('pack-download-btn');
             downloadLink.href = `/api/dayone/pack/${seed}/download?role=${encodeURIComponent(role)}`;
-            downloadLink.innerText = `Download ${data.scenario?.role_title || 'Starter'} Pack (Seed #${seed} .xlsx)`;
-            showToast(`Starter pack for ${data.scenario?.name || role} generated! Ready to download.`, 'success');
+            downloadLink.innerText = `Download the ${data.scenario?.role_title || 'starter'} spreadsheet (.xlsx)`;
+            showToast(`Your ${data.scenario?.name || role} spreadsheet is ready to download.`, 'success');
         } else {
-            showToast(`Generation error: ${data.detail || 'Failed'}`, 'error');
+            showToast(`Could not prepare the spreadsheet: ${data.detail || 'Please try again.'}`, 'error');
         }
     } catch (err) {
-        showToast('Error generating pack: ' + err.message, 'error');
+        showToast('Could not prepare your spreadsheet: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Generate Role Pack';
+        btn.innerHTML = 'Create a new sample';
     }
 }
 
@@ -422,7 +425,7 @@ async function generateDayOnePack() {
 async function runAutopsySubmission(isDemo = false) {
     const autopsyBtn = document.getElementById(isDemo ? 'btn-autopsy-demo' : 'btn-autopsy-upload');
     const originalText = autopsyBtn.innerText;
-    autopsyBtn.innerText = 'Running Metamorphic Autopsy...';
+    autopsyBtn.innerText = 'Checking your spreadsheet...';
     autopsyBtn.disabled = true;
 
     try {
@@ -433,11 +436,11 @@ async function runAutopsySubmission(isDemo = false) {
         if (isDemo) {
             const res = await fetch(`/api/dayone/submit/demo?seed=${seed}&role=${encodeURIComponent(role)}`, { method: 'POST' });
             data = await res.json();
-            if (!res.ok) throw new Error(data.detail || 'Demo autopsy failed');
+            if (!res.ok) throw new Error(data.detail || 'Could not check the sample spreadsheet');
         } else {
             const fileInput = document.getElementById('submission-file');
             if (!fileInput.files || fileInput.files.length === 0) {
-                showToast('Please select a completed .xlsx file first, or click "Demo with Role Reference Pack".', 'warning');
+                showToast('Choose your completed .xlsx spreadsheet, or try the sample spreadsheet.', 'warning');
                 autopsyBtn.innerText = originalText;
                 autopsyBtn.disabled = false;
                 return;
@@ -453,13 +456,13 @@ async function runAutopsySubmission(isDemo = false) {
                 body: formData
             });
             data = await res.json();
-            if (!res.ok) throw new Error(data.detail || 'Workbook autopsy failed');
+            if (!res.ok) throw new Error(data.detail || 'Could not check your spreadsheet');
         }
 
         renderAutopsyScorecard(data);
-        showToast(`Metamorphic Autopsy completed for ${data.scenario?.name || role}!`, 'success');
+        showToast(`Spreadsheet check complete for ${data.scenario?.name || role}.`, 'success');
     } catch (err) {
-        showToast('Autopsy failed: ' + err.message, 'error');
+        showToast('Could not check the spreadsheet: ' + err.message, 'error');
     } finally {
         autopsyBtn.innerText = originalText;
         autopsyBtn.disabled = false;
@@ -480,15 +483,15 @@ function renderAutopsyScorecard(data) {
     const typedBadge = document.getElementById('typed-numbers-badge');
     if (typedFound === 0) {
         typedBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800';
-        typedBadge.innerText = '0 Typed Numbers (Clean Formulas)';
+        typedBadge.innerText = 'No hardcoded numbers found';
     } else {
         typedBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded bg-rose-100 text-rose-800';
-        typedBadge.innerText = `${typedFound} Hardcoded Numbers Detected`;
+        typedBadge.innerText = `${typedFound} hardcoded number${typedFound === 1 ? '' : 's'} found`;
     }
 
     const baseMatch = data.base_matches_key || (data.scores && data.scores.base_matches_key);
     const keyMatchBadge = document.getElementById('key-match-badge');
-    keyMatchBadge.innerText = baseMatch ? 'Matches Reference Key' : 'Base Values Differ';
+    keyMatchBadge.innerText = baseMatch ? 'Matches sample results' : 'Does not match sample results yet';
     keyMatchBadge.className = `text-xs font-semibold px-2.5 py-1 rounded ${baseMatch ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
 
     document.getElementById('defence-start-container').classList.remove('hidden');
@@ -502,7 +505,7 @@ async function startDefenceSession() {
 
     const btn = document.getElementById('btn-start-defence');
     btn.disabled = true;
-    btn.innerHTML = 'Connecting to Mrs. Bello...';
+        btn.innerHTML = 'Opening your conversation...';
     document.getElementById('evidence-brief-card')?.classList.add('hidden');
     document.getElementById('defence-eval-status')?.classList.add('hidden');
     Sabi.lastGeneratedBrief = null;
@@ -513,8 +516,11 @@ async function startDefenceSession() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 student_id: candidateAlias,
+                student_name: Sabi.currentUser?.name || candidateAlias,
+                student_email: Sabi.currentUser?.email || null,
                 seed: seed,
-                role: role
+                role: role,
+                task_id: Sabi.activeEmployerTaskId
             })
         });
         const data = await res.json();
@@ -529,15 +535,15 @@ async function startDefenceSession() {
         renderCurrentDefenceQuestion();
         showToast(
             data.provider_fallback
-                ? 'Mrs. Bello is ready in local backup mode; cloud evaluation is unavailable.'
-                : 'Mrs. Bello is ready for your defence.',
+                ? 'Your conversation is ready. The offline answer checker is being used.'
+                : 'Your conversation with Mrs. Bello is ready.',
             data.provider_fallback ? 'warning' : 'info'
         );
     } catch (err) {
-        showToast('Error starting defence: ' + err.message, 'error');
+            showToast('Could not start the conversation: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Enter Defence Room';
+        btn.innerHTML = 'Explain your work to Mrs. Bello';
     }
 }
 
@@ -549,7 +555,7 @@ function renderCurrentDefenceQuestion() {
 
     const q = Sabi.defenceQuestions[Sabi.currentQuestionIndex];
     document.getElementById('defence-round-indicator').innerText = `Turn ${Sabi.currentQuestionIndex + 1} of ${Sabi.defenceQuestions.length}`;
-    document.getElementById('defence-question-target').innerText = `Target: ${q.cell_or_location || q.where || 'Model!N6'}`;
+    document.getElementById('defence-question-target').innerText = `Spreadsheet cell: ${q.cell_or_location || q.where || 'Model!N6'}`;
     document.getElementById('mrs-bello-text').innerText = q.persona_question || q.question || q.question_text || 'Walk me through how your model works.';
 
     document.getElementById('defence-answer-input').value = '';
@@ -558,8 +564,8 @@ function renderCurrentDefenceQuestion() {
 
 function fillDemoAnswer() {
     const sc = SCENARIOS[Sabi.currentRole] || SCENARIOS["graduate_supply_chain_analyst"];
-    let sample = sc?.defence?.sample_answer || 
-        "Cell N6 computes the output by multiplying baseline parameters from row 6 by the conversion rates in Inputs sheet. When commercial variables fluctuate, cell N6 adjusts dynamically through formula dependencies.";
+    let sample = sc?.defence?.sample_answer ||
+        "This formula calculates the value in cell N6 using the rates and figures on the Inputs sheet. If the exchange rate changes, the result updates automatically.";
     document.getElementById('defence-answer-input').value = sample;
 }
 
@@ -572,7 +578,7 @@ async function submitDefenceAnswer() {
 
     const btn = document.getElementById('btn-submit-answer');
     btn.disabled = true;
-    btn.innerHTML = 'Evaluating Formula Graph Claims...';
+    btn.innerHTML = 'Checking your answer...';
 
     try {
         const res = await fetch('/api/dayone/defence/answer', {
@@ -593,7 +599,14 @@ async function submitDefenceAnswer() {
         const evalBox = document.getElementById('defence-eval-status');
         evalBox.classList.remove('hidden');
         
+        const verdictLabels = {
+            acknowledged_and_fixed: 'You understood what needed fixing',
+            defended_with_valid_reasoning: 'Clear explanation',
+            rationalised: 'Your answer needs more detail',
+            could_not_explain: 'Keep practicing this topic',
+        };
         const isGood = ['acknowledged_and_fixed', 'defended_with_valid_reasoning'].includes(data.classification);
+        const resultLabels = { passed: 'Passed', partial: 'Partly passed', failed: 'Needs more practice', pending: 'In progress' };
         const verifiedCount = Array.isArray(data.claims_verified)
             ? data.claims_verified.filter(claim => claim.verified).length
             : 0;
@@ -601,26 +614,30 @@ async function submitDefenceAnswer() {
             ? data.claims_detected.length
             : 0;
         const providerNote = data.provider_fallback
-            ? ' Local backup evaluator used because cloud evaluation is unavailable.'
+            ? ' Using the offline answer checker.'
             : '';
         evalBox.className = `p-4 rounded-lg border text-sm font-medium ${isGood ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`;
         evalBox.innerHTML = `
             <div class="flex items-center justify-between mb-1">
-                <span class="font-semibold text-xs">Verdict: ${data.classification}</span>
-                <span class="text-xs">${verifiedCount} of ${detectedCount} formula claims verified</span>
+                <span class="font-semibold text-xs">${verdictLabels[data.classification] || 'Answer checked'}</span>
+                <span class="text-xs">${verifiedCount} of ${detectedCount} spreadsheet details checked</span>
             </div>
-            <p class="text-xs opacity-90">Session: ${data.session_status} · Gate: ${data.understanding_gate ? 'Passed' : 'Not yet passed'} · Recommended Level: ${data.recommended_level}${providerNote}</p>
+            <p class="text-xs opacity-90">Result: ${resultLabels[data.session_status] || 'In progress'} · Skill level: ${data.recommended_level}${providerNote}</p>
         `;
 
         if (data.evidence_brief_id) {
             Sabi.lastGeneratedBrief = data.evidence_brief_id;
+            if (Sabi.activeEmployerTaskId) {
+                Sabi.activeEmployerTaskId = null;
+                await loadEmployerTasks();
+            }
             setTimeout(() => {
                 const passed = data.evidence_summary?.defence_outcome === 'passed'
                     && data.evidence_summary?.understanding_gate;
                 showToast(
                     passed
-                        ? 'Defence passed. Evidence Brief generated.'
-                        : 'Defence recorded. Review your result and practice before trying again.',
+                        ? 'You passed. Your signed result is ready.'
+                        : 'Your result is ready. Review it and practice before trying again.',
                     passed ? 'success' : 'warning'
                 );
                 renderEvidenceBriefPreview(data.evidence_brief_id, data.evidence_brief_url, data.evidence_summary, true);
@@ -635,7 +652,7 @@ async function submitDefenceAnswer() {
         showToast('Error submitting answer: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Submit Defence Explanation';
+        btn.innerHTML = 'Send my answer';
     }
 }
 
@@ -671,12 +688,12 @@ async function renderEvidenceBriefPreview(briefId, verifyUrl, evidenceSummary = 
     const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
     const defenceStatus = document.getElementById('brief-defence-status');
     if (defenceStatus) {
-        defenceStatus.innerText = `${statusLabel} (Understanding Gate ${evidenceSummary.understanding_gate ? 'Met' : 'Not Met'})`;
+        defenceStatus.innerText = `${statusLabel} · ${evidenceSummary.understanding_gate ? 'Explanation check passed' : 'Explanation check not passed'}`;
         defenceStatus.className = `font-semibold ${passed ? 'text-emerald-700' : 'text-amber-700'}`;
     }
     const levelBadge = document.getElementById('brief-level-badge');
     if (levelBadge) {
-        levelBadge.innerText = `Tier A: ${evidenceSummary.skill_level || 'Emerging'}`;
+        levelBadge.innerText = `Skill level: ${evidenceSummary.skill_level || 'Emerging'}`;
         levelBadge.className = `text-xs font-mono font-semibold px-2 py-0.5 rounded ${passed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
     }
     const viewBtn = document.getElementById('btn-view-brief');
@@ -771,10 +788,10 @@ function toggleBlindMode() {
     }
     const btn = document.getElementById('btn-toggle-blind');
     if (Sabi.blindMode) {
-        btn.innerText = 'Blind Mode: Active (Pedigree Stripped)';
+        btn.innerText = 'Names hidden';
         btn.className = 'btn btn-primary btn-sm';
     } else {
-        btn.innerText = 'Blind Mode: Off (Pedigree Visible)';
+        btn.innerText = 'Names visible';
         btn.className = 'btn btn-quiet btn-sm';
     }
     loadCandidates();
@@ -1157,7 +1174,7 @@ async function processSmeBrief() {
 
     const btn = document.getElementById('btn-process-sme');
     btn.disabled = true;
-    btn.innerHTML = 'Sanitising Nigerian PII & Extracting Brief...';
+    btn.innerHTML = 'Removing personal details and preparing the task...';
 
     try {
         let res, briefData;
@@ -1187,7 +1204,7 @@ async function processSmeBrief() {
             if (!text) {
                 showToast('Please record audio, upload an audio file, or enter transcript text first.', 'warning');
                 btn.disabled = false;
-                btn.innerHTML = 'Sanitise & Extract Micro-Project Brief';
+                btn.innerHTML = 'Review and create task';
                 return;
             }
 
@@ -1204,23 +1221,25 @@ async function processSmeBrief() {
         }
 
         renderSmeResult(briefData);
-        showToast('Brief successfully sanitised and extracted!', 'success');
+        showToast('Personal details removed. Review your draft task.', 'success');
     } catch (err) {
         showToast('Error processing brief: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Sanitise & Extract Micro-Project Brief';
+        btn.innerHTML = 'Review and create task';
     }
 }
 
 function renderSmeResult(brief) {
+    // Keep the exact draft shown in the review card for the Share action.
+    Sabi.currentSmeBrief = brief;
     const container = document.getElementById('sme-results-container');
     container.classList.remove('hidden');
     const placeholder = document.getElementById('sme-placeholder');
     if (placeholder) placeholder.classList.add('hidden');
     container.scrollIntoView({ behavior: 'smooth' });
 
-    document.getElementById('sme-pii-count').innerText = `${brief.pii_found} PII items redacted`;
+    document.getElementById('sme-pii-count').innerText = `${brief.pii_found} personal detail${brief.pii_found === 1 ? '' : 's'} removed`;
     
     let sanitised = brief.sanitised_transcript;
     sanitised = sanitised.replace(/\[([A-Z_]+_REDACTED)\]/g, '<span class="redacted-tag">$1</span>');
@@ -1558,11 +1577,46 @@ async function loadEmployerTasks() {
         if (res.ok && data.tasks) {
             Sabi.allEmployerTasks = data.tasks;
             renderStudentEmployerTasks();
-            renderEmployerActiveTasks();
+            await loadManagedEmployerTasks();
         }
     } catch (err) {
         console.warn('Failed to load employer tasks:', err);
     }
+}
+
+async function loadManagedEmployerTasks() {
+    const user = Sabi.currentUser;
+    Sabi.myEmployerTasks = [];
+    if (!user?.email) {
+        renderEmployerActiveTasks();
+        return;
+    }
+    try {
+        const params = new URLSearchParams({ email: user.email, name: user.name || '', organization: user.organization || '' });
+        const res = await fetch(`/api/employer/managed-tasks?${params}`);
+        const data = await res.json();
+        Sabi.myEmployerTasks = res.ok && Array.isArray(data.tasks) ? data.tasks : [];
+    } catch (err) {
+        console.warn('Failed to load your task submissions:', err);
+    }
+    // Older task records (or servers before owner_email was added) can still
+    // be matched to the employer who posted them.
+    if (!Sabi.myEmployerTasks.length) {
+        const name = (user.name || '').trim().toLowerCase();
+        const organization = (user.organization || user.company || '').trim().toLowerCase();
+        Sabi.myEmployerTasks = (Sabi.allEmployerTasks || []).filter(task => {
+            const postedBy = (task.posted_by || '').split(' (', 1)[0].trim().toLowerCase();
+            return (name && postedBy === name)
+                || (organization && (task.company_name || '').trim().toLowerCase() === organization);
+        });
+    }
+    renderEmployerActiveTasks();
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
 }
 
 function renderStudentEmployerTasks() {
@@ -1618,9 +1672,9 @@ function renderEmployerActiveTasks() {
     const container = document.getElementById('employer-active-tasks-grid');
     if (!container) return;
 
-    const tasks = Sabi.allEmployerTasks || [];
+    const tasks = Sabi.myEmployerTasks || [];
     if (tasks.length === 0) {
-        container.innerHTML = `<div class="panel text-center py-6 text-slate-400 text-xs">No challenges published yet. Post one above or extract from an SME voice note!</div>`;
+        container.innerHTML = `<div class="panel text-center py-6 text-slate-400 text-xs">No tasks posted by this account yet. Tasks you publish will appear here with their completed submissions.</div>`;
         return;
     }
 
@@ -1631,12 +1685,22 @@ function renderEmployerActiveTasks() {
                     <span class="font-semibold text-slate-900 text-xs">${task.title}</span>
                     <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">${task.status || 'Active'}</span>
                 </div>
-                <p class="text-xs text-slate-500">${task.role_title} · Posted by ${task.posted_by} · ${task.timebox_mins} mins</p>
+                <p class="text-xs text-slate-500">${task.role_title} · ${task.timebox_mins} mins</p>
             </div>
             <div class="flex items-center gap-2 text-xs">
-                <span class="font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-                    ${task.applicants_count || 0} Submissions
+                <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                    ${(task.submissions || []).length} completed
                 </span>
+            </div>
+            <div class="w-full border-t border-slate-100 pt-3">
+                ${(task.submissions || []).length ? `
+                    <p class="text-xs font-semibold text-slate-700 mb-2">Completed by</p>
+                    <ul class="space-y-2">${task.submissions.map(submission => `
+                        <li class="flex items-center justify-between gap-3 text-xs">
+                            <div><span class="font-medium text-slate-800">${escapeHtml(submission.candidate_name || submission.candidate_alias)}</span><span class="block text-slate-500">${escapeHtml(submission.candidate_alias)} · ${escapeHtml(submission.skill_level || 'Result ready')}</span></div>
+                            <a class="text-emerald-700 hover:underline font-semibold whitespace-nowrap" href="/verify/${encodeURIComponent(submission.brief_id)}" target="_blank" rel="noopener">View result</a>
+                        </li>`).join('')}</ul>
+                ` : '<p class="text-xs text-slate-500">No one has completed this task yet.</p>'}
             </div>
         </div>
     `).join('');
@@ -1650,6 +1714,7 @@ function filterEmployerTasks(track, btn) {
 }
 
 function takeEmployerChallenge(taskId, roleTrack) {
+    Sabi.activeEmployerTaskId = taskId;
     // Switch to student portal, select matching role, and open scenario
     if (roleTrack) {
         onRoleChange(roleTrack);
@@ -1660,12 +1725,11 @@ function takeEmployerChallenge(taskId, roleTrack) {
 }
 
 async function publishExtractedBriefAsTask() {
-    if (!Sabi.lastGeneratedBrief) {
+    const b = Sabi.currentSmeBrief;
+    if (!b || !b.problem_statement) {
         showToast('Please extract an SME brief first before publishing.', 'warning');
         return;
     }
-
-    const b = Sabi.lastGeneratedBrief;
     const btn = document.getElementById('btn-publish-extracted-task');
     if (btn) {
         btn.disabled = true;
@@ -1685,7 +1749,8 @@ async function publishExtractedBriefAsTask() {
                 problem_statement: b.problem_statement,
                 deliverables: b.deliverables,
                 skill_tags: b.skill_tags,
-                posted_by: `${Sabi.currentUser?.name || 'SME Partner'} (${Sabi.currentUser?.organization || 'Lagos SME Rail'})`
+                posted_by: `${Sabi.currentUser?.name || 'SME Partner'} (${Sabi.currentUser?.organization || 'Lagos SME Rail'})`,
+                owner_email: Sabi.currentUser?.email
             })
         });
 
@@ -1734,7 +1799,8 @@ async function handleManualTaskSubmit(event) {
                 problem_statement: problem,
                 deliverables: deliverables,
                 skill_tags: skills,
-                posted_by: Sabi.currentUser?.name || 'Talent Partner'
+                posted_by: Sabi.currentUser?.name || 'Talent Partner',
+                owner_email: Sabi.currentUser?.email
             })
         });
 

@@ -10,10 +10,10 @@ function GapCard({ item }) {
   const deficit = gap > 0;
   return (
     <article className="react-insight-gap">
-      <div className="react-insight-gap-heading"><div><span>{readable(item.category || 'Capability')}</span><h4>{readable(item.skill)}</h4></div><b className={deficit ? 'is-deficit' : 'is-covered'}>{deficit ? `${gap}% gap` : `${Math.abs(gap)}% coverage lead`}</b></div>
+      <div className="react-insight-gap-heading"><div><span>{readable(item.category || 'Skill area')}</span><h4>{readable(item.skill)}</h4></div><b className={deficit ? 'is-deficit' : 'is-covered'}>{deficit ? `${gap}% course gap` : `${Math.abs(gap)}% more course coverage`}</b></div>
       <div className="react-insight-bars">
-        <div className="react-insight-bar-row"><span>Employer demand</span><div><i className="demand" style={{ width: `${demand}%` }} /></div><b>{demand}%</b></div>
-        <div className="react-insight-bar-row"><span>Curriculum coverage</span><div><i className="coverage" style={{ width: `${coverage}%` }} /></div><b>{coverage}%</b></div>
+        <div className="react-insight-bar-row"><span>Asked for in jobs</span><div><i className="demand" style={{ width: `${demand}%` }} /></div><b>{demand}%</b></div>
+        <div className="react-insight-bar-row"><span>Covered in courses</span><div><i className="coverage" style={{ width: `${coverage}%` }} /></div><b>{coverage}%</b></div>
       </div>
     </article>
   );
@@ -74,18 +74,18 @@ export default function TalentInsights() {
   return (
     <div className="react-insights-page">
       <section className="react-insights-hero">
-        <div className="react-insights-copy"><span className="react-eyebrow">SABI RADAR · MARKET INTELLIGENCE</span><h2>See where capability meets demand.</h2><p>Compare the skills employers are asking for with what graduates are taught, practice, and can prove.</p></div>
-        <label className="react-insights-filter"><span>FOCUS AREA</span><select aria-label="Filter by department" value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">All departments</option>{departments.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+        <div className="react-insights-copy"><span className="react-eyebrow">SKILLS AND COURSE CONTENT</span><h2>Are graduates learning the skills employers need?</h2><p>Compare skills requested in job listings with what courses cover and what graduates have practiced.</p></div>
+        <label className="react-insights-filter"><span>SHOW DEPARTMENT</span><select aria-label="Filter by department" value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">All departments</option>{departments.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
       </section>
 
       <div className="react-insights-metrics">
-        <div><span>Employer postings analyzed</span><b>{status === 'ready' ? metrics.postings : '—'}</b><small>Sampled market signals</small></div>
-        <div><span>Skills with a coverage gap</span><b>{status === 'ready' ? metrics.gapCount : '—'}</b><small>Demand currently exceeds coverage</small></div>
-        <div><span>Average curriculum coverage</span><b>{status === 'ready' ? `${metrics.average}%` : '—'}</b><small>Across the selected view</small></div>
+        <div><span>Job listings reviewed</span><b>{status === 'ready' ? metrics.postings : '—'}</b><small>Sample listings in this view</small></div>
+        <div><span>Skills with a course gap</span><b>{status === 'ready' ? metrics.gapCount : '—'}</b><small>Jobs ask for these more often</small></div>
+        <div><span>Average course coverage</span><b>{status === 'ready' ? `${metrics.average}%` : '—'}</b><small>For the selected departments</small></div>
       </div>
 
       <section className="react-insights-section">
-        <div className="react-insights-section-head"><div><span className="react-eyebrow">SKILLS LANDSCAPE</span><h3>Where the curriculum can catch up</h3><p>Compare the relative weight of employer demand and curriculum coverage.</p></div><div className="react-insights-legend"><span><i className="demand"/>Employer demand</span><span><i className="coverage"/>Curriculum coverage</span></div></div>
+        <div className="react-insights-section-head"><div><span className="react-eyebrow">SKILLS COMPARISON</span><h3>What jobs ask for and courses teach</h3><p>Higher bars mean more job listings ask for a skill or more courses cover it.</p></div><div className="react-insights-legend"><span><i className="demand"/>Asked for in jobs</span><span><i className="coverage"/>Covered in courses</span></div></div>
         {status === 'loading' && <div className="react-pipeline-message"><span className="spinner"/> Analyzing the skills landscape…</div>}
         {status === 'error' && <div className="react-pipeline-message is-error" role="alert">{error}<button className="btn btn-quiet btn-sm" onClick={() => setRefresh((value) => value + 1)}>Try again</button></div>}
         {status === 'ready' && payload?.gaps?.length === 0 && <div className="react-pipeline-message">No skill data is available for this department yet. Choose another focus area.</div>}
@@ -93,7 +93,7 @@ export default function TalentInsights() {
       </section>
 
       <section className="react-insights-section react-insights-cohorts">
-        <div className="react-insights-section-head"><div><span className="react-eyebrow">PROOF PIPELINE</span><h3>From taught to proven</h3><p>See how capability progresses from classroom exposure to evidence employers can trust.</p></div></div>
+        <div className="react-insights-section-head"><div><span className="react-eyebrow">STUDENT PROGRESS</span><h3>From learning to showing your work</h3><p>See how many students have studied, practiced, and demonstrated these skills.</p></div></div>
         {status === 'ready' && payload?.funnels?.length > 0 && <div className="react-insights-funnel-grid">{payload.funnels.map((funnel) => <FunnelCard key={funnel.department} funnel={funnel}/>)}</div>}
       </section>
     </div>

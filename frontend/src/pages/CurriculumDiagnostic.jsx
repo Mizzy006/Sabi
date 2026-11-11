@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 const roles = [
-  { id: 'graduate_supply_chain_analyst', title: 'Graduate Supply-Chain Analyst', scenario: 'Apapa Port Landed-Cost & Demurrage', description: 'Landed-cost modelling, ECOWAS tariff calculation, port demurrage mitigation, and FX sensitivity analysis.' },
-  { id: 'junior_data_analyst', title: 'Junior Data Analyst', scenario: 'Customer Retention, Unit Economics & SQL', description: 'Customer cohort retention analysis, unit economics (LTV/CAC), and data pipeline cleaning.' },
-  { id: 'operations_associate', title: 'Operations Associate', scenario: 'Haulage Margins & Turnaround Optimization', description: 'Fleet dispatch haulage margins, liquidity balancing, and turnaround optimization.' },
-  { id: 'financial_modelling_intern', title: 'Financial Modelling Intern', scenario: '13-Week Cashflow Runway & Working Capital', description: '13-week cashflow forecasting, working capital optimization, and credit risk stress-testing.' }
+  { id: 'graduate_supply_chain_analyst', title: 'Graduate Supply-Chain Analyst', scenario: 'Import costs and port fees', description: 'Calculate the full cost of imported goods, including duty, port fees and exchange-rate changes.' },
+  { id: 'junior_data_analyst', title: 'Junior Data Analyst', scenario: 'Customer trends and sales data', description: 'Find customer trends, check sales data and explain what the numbers mean.' },
+  { id: 'operations_associate', title: 'Operations Associate', scenario: 'Transport costs and delivery times', description: 'Compare delivery costs, fuel use and travel times across routes.' },
+  { id: 'financial_modelling_intern', title: 'Financial Modelling Intern', scenario: 'Cash flow and business costs', description: 'Forecast cash coming in and going out, and see how the business handles changes.' }
 ];
 
 const presets = {
@@ -102,7 +102,7 @@ function CurriculumDiagnostic() {
       if (!response.ok || data.status !== 'success') throw new Error(data.detail || 'The diagnostic could not be calculated.');
       setResult(data);
       setStatus('ready');
-      window.showToast?.(`Diagnostic calculated: ${data.match_percentage}% match for ${data.target_role_title}`, 'success');
+      window.showToast?.(`Course comparison complete: ${data.match_percentage}% match for ${data.target_role_title}.`, 'success');
     } catch (reason) {
       setStatus('error');
       setError(reason.message || 'The diagnostic could not be calculated. Please try again.');
@@ -160,33 +160,33 @@ function CurriculumDiagnostic() {
         <div>
           <div className="react-section-eyebrow">YOUR NEXT STEP, MADE CLEAR</div>
           <h2>Skills diagnostic</h2>
-          <p>See how your coursework lines up with the skills employers ask graduates to use on the job.</p>
+          <p>See how your courses line up with the skills employers want for the job you’re preparing for.</p>
         </div>
         <div className="react-diagnostic-profile">
           <div className="react-profile-avatar">{String(user.name || 'A').slice(0, 1).toUpperCase()}</div>
           <div><b>{user.name || 'Student'}</b><span>{user.university || user.organization || 'Student profile'}</span></div>
-          <button className="btn btn-quiet btn-sm" type="button" disabled={status === 'loading'} onClick={() => runAnalysis()}>Re-evaluate</button>
+          <button className="btn btn-quiet btn-sm" type="button" disabled={status === 'loading'} onClick={() => runAnalysis()}>Update results</button>
         </div>
       </header>
 
       <section className="react-diagnostic-input panel" aria-labelledby="diagnostic-input-heading">
-        <div className="react-diagnostic-section-title"><span>01</span><div><h3 id="diagnostic-input-heading">Set your target and add your coursework</h3><p>Choose a role, then paste a course outline or upload your syllabus.</p></div></div>
+        <div className="react-diagnostic-section-title"><span>01</span><div><h3 id="diagnostic-input-heading">Add your course information</h3><p>Choose the kind of job you want, then paste your course list or upload a syllabus.</p></div></div>
         <div className="react-diagnostic-grid">
           <div className="react-diagnostic-form">
-            <label className="react-form-label" htmlFor="react-curriculum-role">Target commercial role</label>
+            <label className="react-form-label" htmlFor="react-curriculum-role">Job you’re preparing for</label>
             <select id="react-curriculum-role" className="field w-full" value={targetRole} onChange={(event) => setTargetRole(event.target.value)}>
               {roles.map((role) => <option key={role.id} value={role.id}>{role.title} · {role.scenario}</option>)}
             </select>
             <p className="react-role-description">{currentRole.description}</p>
 
-            <div className="react-preset-heading"><span className="react-form-label">Start with a Nigerian degree preset</span><small>Loads a sample course outline</small></div>
+            <div className="react-preset-heading"><span className="react-form-label">Use a sample course list</span><small>Choose one to see an example</small></div>
             <div className="react-preset-list">
               <button type="button" className="react-preset" onClick={() => loadPreset('unilag_econ')}><span><b>Economics</b><small>UNILAG · B.Sc.</small></span><i>↗</i></button>
               <button type="button" className="react-preset" onClick={() => loadPreset('ui_compsci')}><span><b>Computer Science</b><small>University of Ibadan · B.Sc.</small></span><i>↗</i></button>
               <button type="button" className="react-preset" onClick={() => loadPreset('abu_accounting')}><span><b>Accounting</b><small>ABU · B.Sc.</small></span><i>↗</i></button>
             </div>
 
-            <div className="react-text-label"><label className="react-form-label" htmlFor="react-curriculum-text">Course outline or syllabus</label><button type="button" onClick={() => setCurriculumText('')}>Clear</button></div>
+            <div className="react-text-label"><label className="react-form-label" htmlFor="react-curriculum-text">Paste your course list</label><button type="button" onClick={() => setCurriculumText('')}>Clear</button></div>
             <textarea id="react-curriculum-text" className="field react-curriculum-text" value={curriculumText} onChange={(event) => setCurriculumText(event.target.value)} placeholder="Paste course codes, syllabus topics, or transcript modules…" />
           </div>
 
@@ -205,9 +205,9 @@ function CurriculumDiagnostic() {
               <small>{selectedFile ? `${Math.max(1, Math.round(selectedFile.size / 1024))} KB · Ready to analyze` : 'PDF, Word, Markdown, or text · up to 10 MB'}</small>
               {selectedFile && <span className="react-file-clear" onClick={(event) => { event.preventDefault(); clearFile(); }}>Remove file</span>}
             </label>
-            <div className="react-upload-note"><span>⌑</span><p>Your course information is used to produce this diagnostic and is not shown in the blind employer pipeline.</p></div>
+            <div className="react-upload-note"><span>⌑</span><p>Your course information is used for this comparison and isn’t shown to employers.</p></div>
             <button type="button" className="btn btn-primary react-analyze-button" disabled={status === 'loading'} onClick={() => runAnalysis()}>
-              {status === 'loading' ? <><span className="spinner" />Analyzing your course outline…</> : <>Analyze my skills fit <span aria-hidden="true">→</span></>}
+              {status === 'loading' ? <><span className="spinner" />Checking your courses…</> : <>Compare my courses with this job <span aria-hidden="true">→</span></>}
             </button>
             {status === 'error' && <p className="react-diagnostic-error" role="alert">{error}</p>}
           </div>
@@ -218,31 +218,31 @@ function CurriculumDiagnostic() {
         <div className="react-results-heading"><div><div className="react-section-eyebrow">YOUR DIAGNOSTIC</div><h3>Where you stand today</h3></div><span>{result ? `Based on ${result.target_role_title}` : status === 'loading' ? `Assessing ${currentRole.title}` : currentRole.title}</span></div>
         <div className="react-result-metrics">
           <article className="react-result-card react-result-score"><span>Coursework match</span><div><b>{result ? result.match_percentage : '—'}</b><small>{result ? '%' : 'Awaiting analysis'}</small></div><div className="react-result-track"><i style={{ width: `${result ? Math.max(0, Math.min(100, result.match_percentage)) : 0}%` }} /></div><small>Coverage of role-relevant competencies</small></article>
-          <article className="react-result-card"><span>Readiness tier</span><b className="react-result-value">{result?.readiness_tier || '—'}</b><small>Competency classification</small></article>
-          <article className="react-result-card"><span>Graduate benchmark</span><b className="react-result-value">{percentile === null ? '—' : `Top ${percentile}%`}</b><small>{result ? `${result.cohort_percentile}th percentile` : 'Compared with peers'}</small></article>
-          <article className="react-result-card"><span>Recommended bridge</span><b className="react-result-bridge">{result?.recommended_bridge_scenario || '—'}</b><button type="button" onClick={startBridge} disabled={!result} className="react-bridge-link">Explore this scenario <span>↗</span></button></article>
+          <article className="react-result-card"><span>Coursework match level</span><b className="react-result-value">{result?.readiness_tier || '—'}</b><small>Based on the course information you shared</small></article>
+          <article className="react-result-card"><span>Compared with graduates</span><b className="react-result-value">{percentile === null ? '—' : `Top ${percentile}%`}</b><small>{result ? 'In this sample group' : 'A sample group comparison'}</small></article>
+          <article className="react-result-card"><span>Suggested practice task</span><b className="react-result-bridge">{result?.recommended_bridge_scenario || '—'}</b><button type="button" onClick={startBridge} disabled={!result} className="react-bridge-link">Try this task <span>↗</span></button></article>
         </div>
 
-        {result ? <div className="react-diagnostic-summary"><span className="react-summary-check">✓</span><p><b>Diagnostic summary</b>{result.summary}</p></div> : <div className="react-diagnostic-summary is-empty"><span>i</span><p><b>Your results will appear here</b>We’ll compare the coursework you share with the capabilities employers request for your target role.</p></div>}
+        {result ? <div className="react-diagnostic-summary"><span className="react-summary-check">✓</span><p><b>What we found</b>{result.summary}</p></div> : <div className="react-diagnostic-summary is-empty"><span>i</span><p><b>Your results will appear here</b>We’ll compare the courses you share with the skills employers want for your chosen role.</p></div>}
 
         <div className="react-competency-grid">
           <article className="react-competency-panel">
-            <div className="react-competency-heading"><span className="react-competency-dot is-strong"/><div><h4>Strengths from your coursework</h4><p>Knowledge your outline already covers</p></div><b>{result?.strong_areas?.length || 0}</b></div>
+              <div className="react-competency-heading"><span className="react-competency-dot is-strong"/><div><h4>Skills your courses cover</h4><p>Areas where your course list gives you a foundation</p></div><b>{result?.strong_areas?.length || 0}</b></div>
             <div className="react-competency-list">
-              {!result && <p className="react-competency-empty">Run the diagnostic to see where your coursework gives you a strong foundation.</p>}
+              {!result && <p className="react-competency-empty">Compare your courses to see which job skills you’ve already studied.</p>}
               {result?.strong_areas?.map((item) => <div className="react-competency-item" key={item.name}><div><b>{item.name}</b><span>{item.category} · {item.rating}</span></div><strong>{item.score_pct}%</strong><small>{item.assessment}</small><i><em style={{ width: `${Math.max(0, Math.min(100, item.score_pct))}%` }} /></i></div>)}
             </div>
           </article>
           <article className="react-competency-panel">
-            <div className="react-competency-heading"><span className="react-competency-dot is-gap"/><div><h4>Skills to build next</h4><p>Capabilities missing from your outline</p></div><b>{result?.areas_to_work_on?.length || 0}</b></div>
+              <div className="react-competency-heading"><span className="react-competency-dot is-gap"/><div><h4>Skills to practice next</h4><p>Job skills not clearly covered in your course list</p></div><b>{result?.areas_to_work_on?.length || 0}</b></div>
             <div className="react-competency-list">
-              {!result && <p className="react-competency-empty">We’ll identify practical areas to work on after reviewing your course outline.</p>}
+              {!result && <p className="react-competency-empty">We’ll suggest useful skills to practice after reviewing your course list.</p>}
               {result?.areas_to_work_on?.map((item) => <div className="react-competency-item react-gap-item" key={item.name}><div><b>{item.name}</b><span>{item.category}</span></div><strong className={item.severity === 'Critical Deficit' ? 'is-critical' : ''}>{item.severity}</strong><small>{item.gap_description}</small><button type="button" onClick={() => window.startBridgeScenario?.(targetRole)}>Practice in {item.bridge_scenario || currentRole.title} <span>→</span></button></div>)}
             </div>
           </article>
         </div>
 
-        {result && <div className="react-remediation-banner"><div><span>YOUR NEXT MOVE</span><h4>Turn a skill gap into hands-on evidence</h4><p>Choose the recommended Day One scenario, build a working model, and show what you can do beyond your course outline.</p></div><button type="button" className="btn btn-primary" onClick={startBridge}>Launch Day One <span>→</span></button></div>}
+        {result && <div className="react-remediation-banner"><div><span>YOUR NEXT STEP</span><h4>Practice a skill you haven’t covered yet</h4><p>Try a realistic task for your chosen role and put what you’ve learned into practice.</p></div><button type="button" className="btn btn-primary" onClick={startBridge}>Try a practice task <span>→</span></button></div>}
       </section>
     </div>
   );
