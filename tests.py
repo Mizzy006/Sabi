@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 
 import pytest
 
@@ -492,7 +493,12 @@ class TestServer:
         assert data["count"] >= 3
         assert len(data["tasks"]) >= 3
 
-    def test_employer_task_create(self):
+    def test_employer_task_create(self, monkeypatch):
+        import sabi_server
+
+        fd, task_store = tempfile.mkstemp(prefix=".test-employer-tasks-", dir=BASE)
+        os.close(fd)
+        monkeypatch.setattr(sabi_server, "EMPLOYER_TASKS_FILE", task_store)
         task_payload = {
             "title": "Flutterwave FX Arbitrage Settlement Model",
             "role_track": "financial_modelling_intern",
@@ -504,12 +510,16 @@ class TestServer:
             "skill_tags": ["FX Hedging", "Treasury Operations", "Dynamic Invariance"],
             "posted_by": "Tunde Bakare (Flutterwave)"
         }
-        res = self.client.post("/api/employer/tasks", json=task_payload)
-        assert res.status_code == 200
-        data = res.json()
-        assert data["status"] == "success"
-        assert data["task"]["title"] == "Flutterwave FX Arbitrage Settlement Model"
-        assert data["task"]["company_name"] == "Flutterwave"
+        try:
+            res = self.client.post("/api/employer/tasks", json=task_payload)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "success"
+            assert data["task"]["title"] == "Flutterwave FX Arbitrage Settlement Model"
+            assert data["task"]["company_name"] == "Flutterwave"
+        finally:
+            if os.path.exists(task_store):
+                os.unlink(task_store)
 
     def test_student_curriculum_gap_text(self):
         econ_syllabus = (
