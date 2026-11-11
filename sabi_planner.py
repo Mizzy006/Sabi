@@ -25,9 +25,16 @@ import sys
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-from pulp import (
-    LpProblem, LpMaximize, LpVariable, lpSum, LpStatus, value, PULP_CBC_CMD,
-)
+import pulp
+from pulp import COIN_CMD, LpMaximize, LpProblem, LpStatus, lpSum, value
+
+
+def _cbc_solver():
+    """Use COIN_CMD with the bundled CBC binary on older PuLP installs."""
+    legacy_solver = getattr(pulp, "PULP_CBC_CMD", None)
+    bundled_path = getattr(legacy_solver, "pulp_cbc_path", None)
+    path = bundled_path if bundled_path and os.path.isfile(bundled_path) else None
+    return COIN_CMD(path=path, msg=0, timeLimit=30)
 
 # ---------------------------------------------------------------------------
 # Skills taxonomy (starter: ~30 skills for Junior Data Analyst)
@@ -217,34 +224,40 @@ def solve(profile: StudentProfile) -> Plan:
         resources = [r for r in resources if r.offline]
 
     prob = LpProblem("sabi_planner", LpMaximize)
+    constraint_specs = []
+    arena_constraint_names = set()
+
+    def add_constraint(constraint, name):
+        prob.addConstraint(constraint, name)
+        constraint_specs.append((constraint, name))
 
     # Decision variables: x[r,w] = 1 if resource r is assigned to week w
     x = {}
     for r in resources:
         for w in range(1, W + 1):
-            x[r.id, w] = LpVariable(f"x_{r.id}_w{w}", cat="Binary")
+            x[r.id, w] = prob.add_variable(f"x_{r.id}_w{w}", cat="Binary")
 
     # Each resource is used at most once
     for r in resources:
-        prob += lpSum(x[r.id, w] for w in range(1, W + 1)) <= 1, f"once_{r.id}"
+        add_constraint(lpSum(x[r.id, w] for w in range(1, W + 1)) <= 1, f"once_{r.id}")
 
     # Weekly hours constraint
     for w in range(1, W + 1):
-        prob += (
+        add_constraint(
             lpSum(r.hours * x[r.id, w] for r in resources) <= profile.weekly_hours,
             f"hours_w{w}",
         )
 
     # Weekly MB constraint
     for w in range(1, W + 1):
-        prob += (
+        add_constraint(
             lpSum(r.mb * x[r.id, w] for r in resources) <= profile.weekly_mb,
             f"mb_w{w}",
         )
 
     # Max new skills per week (approximate: count resources as proxy)
     for w in range(1, W + 1):
-        prob += (
+        add_constraint(
             lpSum(x[r.id, w] for r in resources) <= profile.max_new_skills_per_week + 2,
             f"new_skills_w{w}",
         )
@@ -268,7 +281,7 @@ def solve(profile: StudentProfile) -> Plan:
                     continue
                 for w in range(1, W + 1):
                     # If r is in week w, at least one p_resource must be in a week < w
-                    prob += (
+                    add_constraint(
                         x[r.id, w] <= lpSum(
                             x[pr.id, pw] for pr in p_resources for pw in range(1, w)
                         ) + (1 if profile.baseline.get(p, 0) >= 0.5 else 0),
@@ -280,30 +293,36 @@ def solve(profile: StudentProfile) -> Plan:
     if arena_resources and W >= profile.arena_interval_weeks:
         for block_start in range(1, W + 1, profile.arena_interval_weeks):
             block_end = min(block_start + profile.arena_interval_weeks - 1, W)
-            prob += (
+            name = f"arena_block_{block_start}"
+            add_constraint(
                 lpSum(x[r.id, w] for r in arena_resources for w in range(block_start, block_end + 1)) >= 1,
-                f"arena_block_{block_start}",
+                name,
             )
+            arena_constraint_names.add(name)
 
     # Objective: maximise demand-weighted skill gain
     # Gain for a skill = sum of gains from all assigned resources × demand weight
-    prob += lpSum(
+    objective = lpSum(
         weights.get(s, 0) * r.gain * x[r.id, w]
         for r in resources
         for s in r.skills
         for w in range(1, W + 1)
-    ), "total_demand_weighted_gain"
+    )
+    prob += objective, "total_demand_weighted_gain"
 
     # Solve
-    solver = PULP_CBC_CMD(msg=0, timeLimit=30)
+    solver = _cbc_solver()
     prob.solve(solver)
 
     if LpStatus[prob.status] != "Optimal":
         # Try relaxed: drop arena constraint
-        for name in list(prob.constraints):
-            if name.startswith("arena_block_"):
-                del prob.constraints[name]
-        prob.solve(solver)
+        relaxed_prob = LpProblem("sabi_planner_relaxed", LpMaximize)
+        for constraint, name in constraint_specs:
+            if name not in arena_constraint_names:
+                relaxed_prob += (constraint, name)
+        relaxed_prob += objective, "total_demand_weighted_gain"
+        relaxed_prob.solve(solver)
+        prob = relaxed_prob
 
     # Extract solution
     slots = []

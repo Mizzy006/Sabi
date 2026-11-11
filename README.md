@@ -63,7 +63,7 @@ Radar (direction) → Planner (path) → Arena & Day One (practice)
 ### Install
 
 ```bash
-pip install openpyxl pywin32 pydantic fastapi uvicorn pulp qrcode[pil] groq
+pip install openpyxl pywin32 pydantic fastapi uvicorn "pulp[cbc]" httpx2 "qrcode[pil]" groq
 ```
 
 ### Frontend workspace
