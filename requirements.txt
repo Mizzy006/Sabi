@@ -5,7 +5,8 @@ python-dotenv
 jinja2
 python-multipart
 openpyxl
-pulp[cbc]
+pulp
+highspy
 qrcode[pil]
 groq
 vercel

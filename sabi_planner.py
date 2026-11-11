@@ -30,7 +30,15 @@ from pulp import COIN_CMD, LpMaximize, LpProblem, LpStatus, lpSum, value
 
 
 def _cbc_solver():
-    """Use COIN_CMD with the bundled CBC binary on older PuLP installs."""
+    """Prefer the compact HiGHS runtime, with CBC as a compatibility fallback."""
+    highs_solver = getattr(pulp, "HiGHS", None)
+    if highs_solver is not None:
+        try:
+            solver = highs_solver(msg=False, timeLimit=30)
+            if solver.available():
+                return solver
+        except Exception:
+            pass
     legacy_solver = getattr(pulp, "PULP_CBC_CMD", None)
     bundled_path = getattr(legacy_solver, "pulp_cbc_path", None)
     path = bundled_path if bundled_path and os.path.isfile(bundled_path) else None
