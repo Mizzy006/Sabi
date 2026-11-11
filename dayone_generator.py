@@ -372,6 +372,9 @@ def build_workbook(pack, filled):
         ws.cell(row=i, column=1).alignment = WRAP
     ws["A11"], ws["A11"].font = "AI tools used? (Yes/No)", F_BOLD
     ws["A12"], ws["A12"].font = "Assumptions and notes", F_BOLD
+    if filled:
+        ws[BRIEF_AI_CELL] = "No"
+        ws[BRIEF_NOTES_CELL] = "Reference formulas are linked to the source data and editable assumptions."
     for addr in (BRIEF_AI_CELL, BRIEF_NOTES_CELL):
         ws[addr].fill, ws[addr].protection, ws[addr].font, ws[addr].alignment = FILL_YELLOW, UNLOCKED, F_BASE, WRAP
     dv = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True)

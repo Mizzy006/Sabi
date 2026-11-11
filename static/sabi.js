@@ -118,6 +118,7 @@ const Sabi = {
     curriculumSelectedFile: null,
     curriculumGapData: null
 };
+window.getBlindMode = () => Sabi.blindMode;
 
 // Toast notification helper
 function showToast(message, type = 'info') {
@@ -176,6 +177,7 @@ function switchTab(tabId) {
     } else if (tabId === 'student-analytics') {
         initCurriculumGapIfEmpty();
     }
+    window.dispatchEvent(new CustomEvent('sabi:navigation', { detail: { tabId } }));
 }
 
 // ---------------------------------------------------------------------------
@@ -275,6 +277,8 @@ function updateScenarioUI(role) {
 
 // 2. Study Planner Logic
 async function solvePlan() {
+    const requestId = (Sabi.planSolveSequence || 0) + 1;
+    Sabi.planSolveSequence = requestId;
     const role = document.getElementById('plan-role')?.value || Sabi.currentRole;
     const weeklyHours = parseFloat(document.getElementById('plan-hours')?.value || 12);
     const weeklyMb = parseFloat(document.getElementById('plan-mb')?.value || 500);
@@ -282,7 +286,7 @@ async function solvePlan() {
     const offlineOnly = document.getElementById('plan-offline')?.checked || false;
 
     const btn = document.getElementById('btn-solve-plan');
-    const originalText = btn ? btn.innerHTML : '';
+    const originalText = '<span>Calculate Optimal Path</span>';
     if (btn) {
         btn.innerHTML = `<span class="spinner"></span> Solving with PuLP...`;
         btn.disabled = true;
@@ -333,7 +337,7 @@ async function solvePlan() {
                 weekCard.innerHTML = `
                     <div class="flex justify-between items-center mb-1.5">
                         <span class="font-semibold text-xs text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">Week ${w.week}</span>
-                        <span class="text-xs text-slate-500 font-medium">${w.hours_used}h / ${w.mb_used}MB</span>
+                        <span class="text-xs text-slate-500 font-medium">${w.total_hours}h / ${w.total_mb}MB</span>
                     </div>
                     <div class="space-y-1">
                         ${resList}
@@ -363,9 +367,9 @@ async function solvePlan() {
             }
         }
     } catch (err) {
-        showToast('Planner solver failed: ' + err.message, 'error');
+        if (requestId === Sabi.planSolveSequence) showToast('Planner solver failed: ' + err.message, 'error');
     } finally {
-        if (btn) {
+        if (btn && requestId === Sabi.planSolveSequence) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
@@ -420,6 +424,7 @@ async function runAutopsySubmission(isDemo = false) {
         if (isDemo) {
             const res = await fetch(`/api/dayone/submit/demo?seed=${seed}&role=${encodeURIComponent(role)}`, { method: 'POST' });
             data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Demo autopsy failed');
         } else {
             const fileInput = document.getElementById('submission-file');
             if (!fileInput.files || fileInput.files.length === 0) {
@@ -439,6 +444,7 @@ async function runAutopsySubmission(isDemo = false) {
                 body: formData
             });
             data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Workbook autopsy failed');
         }
 
         renderAutopsyScorecard(data);
@@ -614,6 +620,7 @@ function renderEvidenceBriefPreview(briefId, verifyUrl) {
 // ---------------------------------------------------------------------------
 
 async function loadCandidates() {
+    if (window.reactCandidatePipelineLoaded) return;
     const container = document.getElementById('candidate-list-grid');
     container.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400 font-medium"><span class="spinner"></span> Fetching verified candidates...</div>`;
 
@@ -688,6 +695,10 @@ async function loadCandidates() {
 
 function toggleBlindMode() {
     Sabi.blindMode = !Sabi.blindMode;
+    if (window.reactCandidatePipelineLoaded) {
+        window.dispatchEvent(new CustomEvent('sabi:blind', { detail: { blind: Sabi.blindMode } }));
+        return;
+    }
     const btn = document.getElementById('btn-toggle-blind');
     if (Sabi.blindMode) {
         btn.innerText = 'Blind Mode: Active (Pedigree Stripped)';
@@ -704,6 +715,10 @@ function toggleBlindMode() {
 // ---------------------------------------------------------------------------
 
 async function loadRadarData() {
+    if (window.reactTalentInsightsLoaded) {
+        window.dispatchEvent(new CustomEvent('sabi:radar-refresh'));
+        return;
+    }
     const dept = document.getElementById('radar-dept-select')?.value;
     const chartContainer = document.getElementById('radar-gaps-container');
     const funnelContainer = document.getElementById('radar-funnel-container');
@@ -1436,6 +1451,7 @@ function setUserSession(user, saveToStorage = true) {
     }
 
     applyPortalRole(user.role);
+    window.dispatchEvent(new CustomEvent('sabi:session', { detail: { user } }));
 }
 
 function applyPortalRole(role) {
@@ -1481,6 +1497,7 @@ async function loadEmployerTasks() {
 }
 
 function renderStudentEmployerTasks() {
+    if (window.reactOpenChallengesLoaded) return;
     const container = document.getElementById('student-employer-tasks-grid');
     if (!container) return;
 
@@ -1681,7 +1698,9 @@ function toggleMode() {
     document.documentElement.dataset.mode = next;
     try { localStorage.setItem('sabi-mode', next); } catch (e) { /* storage blocked */ }
     if (next === 'full' && window.loadFullAssets) window.loadFullAssets();
+    if (next === 'full' && window.loadReactWorkspace) window.loadReactWorkspace();
     syncModeSwitch();
+    window.dispatchEvent(new CustomEvent('sabi:mode', { detail: { mode: next } }));
     showToast(next === 'lite' ? 'Data saver on. Future visits will load fewer files.' : 'Data saver off.', 'info');
 }
 
@@ -1740,6 +1759,7 @@ ACC 499: Research Project (Financial performance analysis, empirical accounting 
 };
 
 function initCurriculumGapIfEmpty() {
+    if (window.reactCurriculumLoaded) return;
     if (!Sabi.curriculumGapData) {
         loadCurriculumPreset('unilag_econ');
     }
@@ -2002,4 +2022,17 @@ function startBridgeScenario(roleKey) {
 }
 
 document.addEventListener('DOMContentLoaded', setupCurriculumDropzone);
+
+// Stable bridge surface for the React workspace. Keeping these actions explicit
+// avoids coupling React components to the legacy controller's global scope.
+Object.assign(window, {
+    switchTab,
+    onRoleChange,
+    toggleMode,
+    logout,
+    toggleBlindMode,
+    startBridgeScenario,
+    showToast,
+    takeEmployerChallenge,
+});
 

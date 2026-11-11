@@ -22,8 +22,9 @@
             if (m === 'full') window.loadFullAssets();
         })();
     </script>
-    <link rel="stylesheet" href="/static/sabi.css?v=4.0">
-    <link rel="stylesheet" href="/static/tailwind.css?v=4.0">
+    <link rel="stylesheet" href="/static/sabi.css?v=5.0">
+    <link rel="stylesheet" href="/static/tailwind.css?v=5.0">
+    <link rel="stylesheet" href="/static/sabi-redesign.css?v=4.0">
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -378,7 +379,7 @@
 <!-- VIEW: APPLICATION WORKSPACE (ROLE-SCOPED) -->
 <!-- ================================================================= -->
 <div id="view-app" class="hidden">
-    <header class="site-header">
+    <header id="workspace-header-root" class="site-header">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <a href="#" class="flex items-center gap-3" aria-label="Back to overview">
@@ -406,24 +407,24 @@
             <nav class="tabs" role="tablist" aria-label="Portals">
                 <!-- STUDENT TABS (Visible when logged in as Student) -->
                 <button id="nav-tab-student" class="tab-btn is-active student-only" role="tab" aria-selected="true" data-tab="student" onclick="switchTab('student')">
-                    Day One Scenarios &amp; Defence
+                    My learning
                 </button>
                 <button id="nav-tab-student-analytics" class="tab-btn student-only" role="tab" aria-selected="false" data-tab="student-analytics" onclick="switchTab('student-analytics')">
-                    Candidate Diagnostic &amp; Curriculum Gap
+                    Skills diagnostic
                 </button>
                 <button id="nav-tab-employer-tasks" class="tab-btn student-only" role="tab" aria-selected="false" data-tab="employer-tasks" onclick="switchTab('employer-tasks')">
-                    Available Employer Tasks
+                    Open challenges
                 </button>
 
                 <!-- EMPLOYER TABS (Visible when logged in as Employer) -->
                 <button id="nav-tab-employer" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="employer" onclick="switchTab('employer')">
-                    Candidate Pipeline
+                    Candidate pipeline
                 </button>
                 <button id="nav-tab-sme" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="sme" onclick="switchTab('sme')">
-                    Post Tasks &amp; SME Rails
+                    Tasks &amp; SME studio
                 </button>
                 <button id="nav-tab-radar" class="tab-btn employer-only" role="tab" aria-selected="false" data-tab="radar" onclick="switchTab('radar')">
-                    Radar Talent Analytics
+                    Talent insights
                 </button>
             </nav>
         </div>
@@ -436,6 +437,9 @@
         <!-- TAB 1: STUDENT PORTAL -->
         <!-- ================================================================= -->
         <section id="tab-student" class="tab-panel space-y-6">
+            <div id="react-student-learning">
+            </div>
+            <div id="student-learning-legacy">
             
             <!-- Intro -->
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -779,12 +783,14 @@
 
                 </div>
             </div>
+            </div>
         </section>
 
         <!-- ================================================================= -->
         <!-- TAB 1A: CANDIDATE DIAGNOSTIC & DYNAMIC CURRICULUM GAP ANALYZER -->
         <!-- ================================================================= -->
         <section id="tab-student-analytics" class="tab-panel hidden space-y-6">
+            <div id="react-curriculum-root">
 
             <!-- Banner Header -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
@@ -983,12 +989,14 @@
 
             </div>
 
+            </div>
         </section>
 
         <!-- ================================================================= -->
         <!-- TAB 1B: AVAILABLE EMPLOYER TASKS (FOR STUDENTS) -->
         <!-- ================================================================= -->
         <section id="tab-employer-tasks" class="tab-panel hidden space-y-6">
+            <div id="react-open-challenges">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
                 <div>
                     <div class="flex items-center gap-2">
@@ -1019,12 +1027,14 @@
             <div id="student-employer-tasks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <!-- Dynamically populated by loadEmployerTasks() -->
             </div>
+            </div>
         </section>
 
         <!-- ================================================================= -->
         <!-- TAB 2: EMPLOYER PORTAL -->
         <!-- ================================================================= -->
         <section id="tab-employer" class="tab-panel hidden space-y-6">
+            <div id="react-candidate-pipeline">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
                 <div>
@@ -1043,12 +1053,14 @@
 
             <!-- Candidate Cards Grid -->
             <div id="candidate-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            </div>
         </section>
 
         <!-- ================================================================= -->
         <!-- TAB 3: RADAR ANALYTICS -->
         <!-- ================================================================= -->
         <section id="tab-radar" class="tab-panel hidden space-y-6">
+            <div id="react-talent-insights">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 panel">
                 <div>
@@ -1086,12 +1098,16 @@
                     <div id="radar-funnel-container" class="space-y-4"></div>
                 </div>
             </div>
+            </div>
         </section>
 
         <!-- ================================================================= -->
         <!-- TAB 4: SME RAILS (AUDIO RECORDING & FILE UPLOAD) -->
         <!-- ================================================================= -->
         <section id="tab-sme" class="tab-panel hidden space-y-6">
+            <div id="react-task-studio">
+            </div>
+            <div id="task-studio-legacy">
             
             <div class="space-y-2 panel">
                 <div class="flex items-center space-x-2">
@@ -1319,6 +1335,7 @@
                     </div>
                 </div>
             </div>
+            </div>
         </section>
 
     </main>
@@ -1335,16 +1352,30 @@
     </div>
 
     <!-- App Scripts with cache-busting version query -->
-    <script src="/static/sabi.js?v=4.0"></script>
+    <script src="/static/sabi.js?v=9.0"></script>
     <script>
-        // Ensure immediate role scenario synchronization
+        // Render the default role synchronously; DOMContentLoaded runs the planner once.
         const roleEl = document.getElementById('plan-role');
-        if (roleEl && typeof onRoleChange === 'function') {
-            onRoleChange(roleEl.value);
+        if (roleEl && typeof updateScenarioUI === 'function') {
+            updateScenarioUI(roleEl.value);
         }
         if (typeof loadSmePreset === 'function') {
             loadSmePreset('adebayo', true);
         }
+        window.loadReactWorkspace = function () {
+            if (document.getElementById('react-workspace-bundle')) return;
+            const reactStyles = document.createElement('link');
+            reactStyles.id = 'react-workspace-styles';
+            reactStyles.rel = 'stylesheet';
+            reactStyles.href = '/static/react/app.css?v=9.0';
+            document.head.appendChild(reactStyles);
+            const reactBundle = document.createElement('script');
+            reactBundle.id = 'react-workspace-bundle';
+            reactBundle.type = 'module';
+            reactBundle.src = '/static/react/app.js?v=9.0';
+            document.body.appendChild(reactBundle);
+        };
+        if (document.documentElement.dataset.mode === 'full') window.loadReactWorkspace();
     </script>
 </body>
 </html>

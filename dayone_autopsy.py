@@ -260,7 +260,8 @@ def shock_tests(path, key, workdir):
         got = run_variant(path, s["changes"], workdir)
         props = properties(s, base_got, got, key)
         bad = compare(got, s["expected"])
-        results["shocks"][s["id"]] = {"label": s["label"], "visible": s["visible"], "properties": props,
+        results["shocks"][s["id"]] = {"label": s.get("label", s.get("name", s["id"])),
+                                      "visible": s.get("visible", s["id"] == "S6_VISIBLE"), "properties": props,
                                       "mismatches": bad, "errors": got["errors"],
                                       "responsive": all(p["ok"] for p in props) and not got["errors"],
                                       "matches_key": not bad}

@@ -308,7 +308,7 @@ def _assemble_pack(rnd: random.Random, seed: int, scenario: dict, inp: dict, dut
     # 6 Metamorphic Shocks
     fx_new = round(inp["FX_USD_NGN"] * 1.25, -1)
     duty_cat = list(duty.keys())[0]
-    duty_cell = "Inputs!B14"
+    duty_cell = f"Inputs!B{15 + list(duty).index(duty_cat)}"
     cap_new = round(inp["BUDGET_CAP_NGN"] * 0.75, -5)
 
     shocks = [
@@ -467,10 +467,10 @@ def _write_workbook(pack_data: dict, file_path: str, is_starter: bool = False):
     ws_b["A9"] = "1. Clean raw inputs and map rates from Inputs sheet into Model sheet using Excel formulas (XLOOKUP/INDEX-MATCH)."
     ws_b["A10"] = "2. Calculate total landed unit costs and contribution margins dynamically."
     ws_b["A11"] = "3. Complete Outputs sheet with summary KPI metrics that survive all 6 metamorphic shocks."
-    ws_b["A13"] = "AI Tools Declaration (Yes/No):"
-    ws_b["B13"] = "No" if not is_starter else ""
-    ws_b["A14"] = "Notes / Assumptions:"
-    ws_b["B14"] = "All formulas dynamically linked" if not is_starter else ""
+    ws_b["A11"] = "AI Tools Declaration (Yes/No):"
+    ws_b["B11"] = "No" if not is_starter else ""
+    ws_b["A12"] = "Notes / Assumptions:"
+    ws_b["B12"] = "All formulas dynamically linked; rates are category specific." if not is_starter else ""
     ws_b.column_dimensions["A"].width = 35
     ws_b.column_dimensions["B"].width = 50
 
@@ -565,17 +565,20 @@ def _write_workbook(pack_data: dict, file_path: str, is_starter: bool = False):
         sku = c["sku"]
         ws_m[f"A{r}"] = sku
         if not is_starter:
-            # Populate live, valid Excel formulas
-            ws_m[f"B{r}"] = c["cat"]
-            ws_m[f"C{r}"] = "USD"
-            ws_m[f"D{r}"] = c["price_quoted"]
-            ws_m[f"E{r}"] = f"=D{r}"
-            ws_m[f"F{r}"] = c["weight_kg"]
+            # The reference model must read every input from a data sheet so
+            # the autopsy can verify both formula hygiene and shock response.
+            raw_last = 4 + len(raw)
+            duty_last = 14 + len(duty)
+            raw_sku = f"Supplier_Prices!$A$5:$A${raw_last}"
+            ws_m[f"B{r}"] = f"=INDEX(Supplier_Prices!$C$5:$C${raw_last},MATCH($A{r},{raw_sku},0))"
+            ws_m[f"C{r}"] = f"=INDEX(Supplier_Prices!$D$5:$D${raw_last},MATCH($A{r},{raw_sku},0))"
+            ws_m[f"D{r}"] = f"=INDEX(Supplier_Prices!$E$5:$E${raw_last},MATCH($A{r},{raw_sku},0))"
+            ws_m[f"E{r}"] = f'=IF(C{r}="CNY",D{r}/Inputs!$B$5,D{r})'
+            ws_m[f"F{r}"] = f"=INDEX(Supplier_Prices!$F$5:$F${raw_last},MATCH($A{r},{raw_sku},0))"
             ws_m[f"G{r}"] = f"=E{r}*Inputs!$B$4"
             ws_m[f"H{r}"] = f"=F{r}*Inputs!$B$6*Inputs!$B$4"
             ws_m[f"I{r}"] = f"=G{r}+H{r}"
-            cat_row = 15 + list(duty.keys()).index(c["cat"])
-            ws_m[f"J{r}"] = f"=Inputs!$B${cat_row}"
+            ws_m[f"J{r}"] = f'=INDEX(Inputs!$B$15:$B${duty_last},MATCH(B{r},Inputs!$A$15:$A${duty_last},0))'
             ws_m[f"K{r}"] = f"=I{r}*J{r}"
             ws_m[f"L{r}"] = f"=I{r}*Inputs!$B$7"
             ws_m[f"M{r}"] = f"=Inputs!$B$8"
@@ -587,8 +590,8 @@ def _write_workbook(pack_data: dict, file_path: str, is_starter: bool = False):
             ws_m[f"R{r}"] = f'=IF(Q{r}<Inputs!$B$10,"FLAG","OK")'
             ws_m[f"S{r}"] = f"=Order_Plan!B{plan_row}"
             ws_m[f"T{r}"] = f"=N{r}*S{r}"
-            ws_m[f"U{r}"] = f"=RANK(Q{r},Q$6:Q$17)"
-            ws_m[f"V{r}"] = f"=T{r}"
+            ws_m[f"U{r}"] = f"=RANK(Q{r},Q$6:Q$17,0)+COUNTIF(Q$6:Q{r},Q{r})-1"
+            ws_m[f"V{r}"] = f'=SUMIFS($T$6:$T$17,$U$6:$U$17,"<="&U{r})'
             ws_m[f"W{r}"] = f"=IF(V{r}<=Inputs!$B$11,1,0)"
             ws_m[f"X{r}"] = f"=S{r}*W{r}"
             ws_m[f"Y{r}"] = f"=N{r}*X{r}"
@@ -607,10 +610,10 @@ def _write_workbook(pack_data: dict, file_path: str, is_starter: bool = False):
         ("skus_included", "=SUM(Model!W6:W17)"),
         ("ordered_cost", "=SUM(Model!Y6:Y17)"),
         ("headroom", "=Inputs!B11-B7"),
-        ("blended_margin", "=AVERAGE(Model!Q6:Q17)"),
-        ("lowest_margin_sku", clean[0]["sku"]),
+        ("blended_margin", "=IFERROR(SUMPRODUCT(Model!Q6:Q17,Model!P6:P17,Model!X6:X17)/SUMPRODUCT(Model!P6:P17,Model!X6:X17),0)"),
+        ("lowest_margin_sku", "=INDEX(Model!A6:A17,MATCH(MIN(Model!Q6:Q17),Model!Q6:Q17,0))"),
         ("flagged_count", '=COUNTIF(Model!R6:R17,"FLAG")'),
-        ("duplicate_rows", 0),
+        ("duplicate_rows", "=COUNTA(Supplier_Prices!A5:A16)-COUNTA(Model!A6:A17)"),
     ]
 
     for idx, (label, formula) in enumerate(kpi_defs):

@@ -66,6 +66,18 @@ Radar (direction) → Planner (path) → Arena & Day One (practice)
 pip install openpyxl pywin32 pydantic fastapi uvicorn pulp qrcode[pil] groq
 ```
 
+### Frontend workspace
+
+The standard workspace shell, candidate pipeline, skills diagnostic, open challenges, My Learning, Tasks & SME Studio, and Talent Insights use React. The data-saver mode keeps the lightweight HTML fallback, uses a compact system-font layout, and does not request the React bundle or full-mode fonts. Rebuild the local production assets after changing React components or styles:
+
+```bash
+cd frontend
+npm ci
+npm run build
+```
+
+The build writes the self-hosted bundle to `static/react/`. Node is needed for frontend development; the running FastAPI app serves the built assets directly.
+
 ### Generate a Pack & Run the Self-Test
 
 ```bash
