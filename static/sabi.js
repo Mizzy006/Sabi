@@ -221,7 +221,14 @@ function onRoleChange(role) {
     const defenceChat = document.getElementById('defence-chat-card');
     if (defenceChat) defenceChat.classList.add('hidden');
     const defenceStart = document.getElementById('defence-start-container');
-    if (defenceStart) defenceStart.classList.add('hidden');
+    if (defenceStart && !document.getElementById('autopsy-results-card')?.classList.contains('hidden')) {
+        defenceStart.classList.remove('hidden');
+    } else if (defenceStart) {
+        defenceStart.classList.add('hidden');
+    }
+    const evidenceCard = document.getElementById('evidence-brief-card');
+    if (evidenceCard) evidenceCard.classList.add('hidden');
+    Sabi.lastGeneratedBrief = null;
 
     // 6. Recalculate PuLP study plan
     solvePlan();
@@ -496,6 +503,9 @@ async function startDefenceSession() {
     const btn = document.getElementById('btn-start-defence');
     btn.disabled = true;
     btn.innerHTML = 'Connecting to Mrs. Bello...';
+    document.getElementById('evidence-brief-card')?.classList.add('hidden');
+    document.getElementById('defence-eval-status')?.classList.add('hidden');
+    Sabi.lastGeneratedBrief = null;
 
     try {
         const res = await fetch('/api/dayone/defence/start', {
@@ -605,8 +615,15 @@ async function submitDefenceAnswer() {
         if (data.evidence_brief_id) {
             Sabi.lastGeneratedBrief = data.evidence_brief_id;
             setTimeout(() => {
-                showToast('Defence complete! Cryptographic Evidence Brief generated.', 'success');
-                renderEvidenceBriefPreview(data.evidence_brief_id, data.evidence_brief_url);
+                const passed = data.evidence_summary?.defence_outcome === 'passed'
+                    && data.evidence_summary?.understanding_gate;
+                showToast(
+                    passed
+                        ? 'Defence passed. Evidence Brief generated.'
+                        : 'Defence recorded. Review your result and practice before trying again.',
+                    passed ? 'success' : 'warning'
+                );
+                renderEvidenceBriefPreview(data.evidence_brief_id, data.evidence_brief_url, data.evidence_summary, true);
             }, 1200);
         } else {
             setTimeout(() => {
@@ -622,15 +639,50 @@ async function submitDefenceAnswer() {
     }
 }
 
-function renderEvidenceBriefPreview(briefId, verifyUrl) {
+async function renderEvidenceBriefPreview(briefId, verifyUrl, evidenceSummary = {}, showPreview = false) {
+    if (!evidenceSummary.defence_outcome && verifyUrl) {
+        try {
+            const response = await fetch(verifyUrl);
+            if (response.ok) {
+                const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const pageText = page.body.innerText;
+                const outcome = pageText.match(/Defence outcome\s+([^\n]+)/i)?.[1]?.trim();
+                const gate = pageText.match(/Understanding gate\s+([^\n]+)/i)?.[1]?.trim();
+                const level = pageText.match(/Landed-Cost Modelling\s+(Emerging|Working|Strong)/i)?.[1]
+                    || pageText.match(/Skill level\s+(Emerging|Working|Strong)/i)?.[1];
+                evidenceSummary = {
+                    defence_outcome: outcome?.toLowerCase() || 'unknown',
+                    understanding_gate: gate?.toLowerCase() === 'true' || gate?.toLowerCase() === 'passed',
+                    skill_level: level || 'Emerging',
+                };
+            }
+        } catch (err) {
+            console.warn('Could not load signed brief summary:', err);
+        }
+    }
     const card = document.getElementById('evidence-brief-card');
+    if (!card) return;
     card.classList.remove('hidden');
-    card.scrollIntoView({ behavior: 'smooth' });
+    if (showPreview) card.scrollIntoView({ behavior: 'smooth' });
 
     document.getElementById('brief-id-display').innerText = briefId;
+    const passed = evidenceSummary.defence_outcome === 'passed' && evidenceSummary.understanding_gate;
+    const status = evidenceSummary.defence_outcome || 'unknown';
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    const defenceStatus = document.getElementById('brief-defence-status');
+    if (defenceStatus) {
+        defenceStatus.innerText = `${statusLabel} (Understanding Gate ${evidenceSummary.understanding_gate ? 'Met' : 'Not Met'})`;
+        defenceStatus.className = `font-semibold ${passed ? 'text-emerald-700' : 'text-amber-700'}`;
+    }
+    const levelBadge = document.getElementById('brief-level-badge');
+    if (levelBadge) {
+        levelBadge.innerText = `Tier A: ${evidenceSummary.skill_level || 'Emerging'}`;
+        levelBadge.className = `text-xs font-mono font-semibold px-2 py-0.5 rounded ${passed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
+    }
     const viewBtn = document.getElementById('btn-view-brief');
     viewBtn.href = verifyUrl;
     viewBtn.target = '_blank';
+    return evidenceSummary;
 }
 
 // ---------------------------------------------------------------------------

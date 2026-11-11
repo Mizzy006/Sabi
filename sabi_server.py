@@ -563,6 +563,11 @@ def defence_answer(req: DefenceAnswerRequest):
 
         result["evidence_brief_id"] = brief.brief_id
         result["evidence_brief_url"] = f"/verify/{brief.brief_id}"
+        result["evidence_summary"] = {
+            "defence_outcome": brief.signals.defence_outcome,
+            "understanding_gate": brief.signals.understanding_gate,
+            "skill_level": brief.skills[0].level.value if brief.skills else "Emerging",
+        }
 
     return result
 

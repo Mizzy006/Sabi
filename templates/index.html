@@ -762,7 +762,7 @@
                                     <p class="text-xs text-slate-500">Tamper-Evident SHA-256 Proof</p>
                                 </div>
                             </div>
-                            <span class="text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Tier A: Working</span>
+                            <span id="brief-level-badge" class="text-xs font-mono font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Tier A: --</span>
                         </div>
 
                         <div class="text-xs space-y-2 panel-sm">
@@ -772,7 +772,7 @@
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-slate-500">Defence Status:</span>
-                                <span class="font-semibold text-emerald-700">Passed (Understanding Gate Met)</span>
+                                <span id="brief-defence-status" class="font-semibold text-slate-700">--</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-slate-500">Integrity:</span>
@@ -782,7 +782,7 @@
 
                         <div class="flex items-center justify-between pt-1">
                             <p class="text-xs text-slate-500 italic max-w-xs">
-                                Tier A evidence is auto-verified and capped at "Working". Raises the cost of faking.
+                                Tier A is auto-verified; the level reflects this scenario's recorded performance.
                             </p>
                             <a id="btn-view-brief" href="#" target="_blank" class="btn btn-primary btn-sm">
                                 <span>Open Verification Page </span>
@@ -1361,7 +1361,7 @@
     </div>
 
     <!-- App Scripts with cache-busting version query -->
-    <script src="/static/sabi.js?v=11.0"></script>
+    <script src="/static/sabi.js?v=12.0"></script>
     <script>
         // Render the default role synchronously; DOMContentLoaded runs the planner once.
         const roleEl = document.getElementById('plan-role');
