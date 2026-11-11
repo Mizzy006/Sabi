@@ -57,18 +57,19 @@ app = FastAPI(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PACKS_DIR = os.path.join(BASE_DIR, "packs")
-BRIEFS_DIR = os.path.join(BASE_DIR, "briefs")
+DATA_DIR = os.environ.get("SABI_DATA_DIR") or (
+    os.path.join(tempfile.gettempdir(), "sabi-runtime") if os.environ.get("VERCEL") else BASE_DIR
+)
+PACKS_DIR = os.path.join(DATA_DIR, "packs")
+BRIEFS_DIR = os.path.join(DATA_DIR, "briefs")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
-VOICE_NOTES_DIR = os.path.join(BASE_DIR, "voice_notes")
-CONTACT_REQUESTS_FILE = os.path.join(BASE_DIR, "contact_requests.json")
-CANDIDATE_CONTACTS_FILE = os.path.join(BASE_DIR, "candidate_contacts.json")
+VOICE_NOTES_DIR = os.path.join(DATA_DIR, "voice_notes")
+CONTACT_REQUESTS_FILE = os.path.join(DATA_DIR, "contact_requests.json")
+CANDIDATE_CONTACTS_FILE = os.path.join(DATA_DIR, "candidate_contacts.json")
 
 os.makedirs(PACKS_DIR, exist_ok=True)
 os.makedirs(BRIEFS_DIR, exist_ok=True)
-os.makedirs(STATIC_DIR, exist_ok=True)
-os.makedirs(TEMPLATES_DIR, exist_ok=True)
 os.makedirs(VOICE_NOTES_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -81,6 +82,15 @@ _defence_sessions: dict[str, dict] = {}
 
 
 def _load_json_list(path: str) -> list[dict]:
+    blob_path = f"sabi/records/{os.path.basename(path)}"
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        try:
+            data = _blob_get_bytes(blob_path)
+            parsed = json.loads(data.decode("utf-8"))
+            return parsed if isinstance(parsed, list) else []
+        except Exception as exc:
+            if not _is_blob_not_found(exc):
+                raise
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
@@ -90,12 +100,127 @@ def _load_json_list(path: str) -> list[dict]:
 
 
 def _save_json_list(path: str, data: list[dict]) -> None:
+    encoded = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        _blob_put_bytes(f"sabi/records/{os.path.basename(path)}", encoded, "application/json")
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write(encoded.decode("utf-8"))
+
+
+def _blob_client():
+    from vercel.blob import sync as blob
+    return blob
+
+
+def _blob_get_bytes(pathname: str) -> bytes:
+    return _blob_client().get_blob(pathname, access="private").body
+
+
+def _blob_put_bytes(pathname: str, body: bytes, content_type: str = "application/octet-stream"):
+    return _blob_client().put_blob(
+        pathname, body, access="private", content_type=content_type,
+        allow_overwrite=True, add_random_suffix=False,
+    )
+
+
+def _is_blob_not_found(exc: Exception) -> bool:
+    return "notfound" in type(exc).__name__.lower() or "not found" in str(exc).lower() or "404" in str(exc)
+
+
+def _save_brief(brief: EvidenceBrief) -> None:
+    body = brief.model_dump_json(indent=2).encode("utf-8")
+    with open(os.path.join(BRIEFS_DIR, f"{brief.brief_id}.json"), "wb") as f:
+        f.write(body)
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        _blob_put_bytes(f"sabi/briefs/{brief.brief_id}.json", body, "application/json")
+
+
+def _load_brief(brief_id: str) -> Optional[EvidenceBrief]:
+    path = os.path.join(BRIEFS_DIR, f"{brief_id}.json")
+    try:
+        if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+            data = _blob_get_bytes(f"sabi/briefs/{brief_id}.json")
+        else:
+            with open(path, "rb") as f:
+                data = f.read()
+        return EvidenceBrief(**json.loads(data))
+    except Exception as exc:
+        if _is_blob_not_found(exc) or isinstance(exc, (OSError, json.JSONDecodeError)):
+            return None
+        raise
+
+
+def _persist_defence_session(session_id: str, entry: dict) -> None:
+    if not os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        return
+    with open(entry["session"].workbook_path, "rb") as workbook:
+        _blob_put_bytes(
+            f"sabi/sessions/{session_id}/workbook.xlsx", workbook.read(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    snapshot = {
+        "session": entry["session"].model_dump(mode="json"),
+        "role": entry.get("role"),
+        "scenario": entry.get("scenario"),
+        "task_id": entry.get("task_id"),
+        "student_name": entry.get("student_name"),
+        "student_email": entry.get("student_email"),
+        "fallback_used": entry["engine"].fallback_used,
+    }
+    _blob_put_bytes(
+        f"sabi/sessions/{session_id}/session.json",
+        json.dumps(snapshot, ensure_ascii=False).encode("utf-8"),
+        "application/json",
+    )
+
+
+def _get_defence_session(session_id: str) -> Optional[dict]:
+    entry = _defence_sessions.get(session_id)
+    if entry or not os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        return entry
+    from dayone_defence import DefenceEngine, DefenceSession, get_provider
+    try:
+        snapshot = json.loads(_blob_get_bytes(f"sabi/sessions/{session_id}/session.json"))
+        workbook_data = _blob_get_bytes(f"sabi/sessions/{session_id}/workbook.xlsx")
+    except Exception as exc:
+        if _is_blob_not_found(exc):
+            return None
+        raise
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as workbook:
+        workbook.write(workbook_data)
+        workbook_path = workbook.name
+    provider_name = "groq" if os.environ.get("GROQ_API_KEY") else "mock"
+    engine = DefenceEngine(get_provider(provider_name))
+    engine.fallback_used = snapshot.get("fallback_used", False)
+    session_data = snapshot["session"]
+    session_data["workbook_path"] = workbook_path
+    entry = {
+        "engine": engine,
+        "session": DefenceSession(**session_data),
+        "role": snapshot.get("role"),
+        "scenario": snapshot.get("scenario"),
+        "task_id": snapshot.get("task_id"),
+        "student_name": snapshot.get("student_name"),
+        "student_email": snapshot.get("student_email"),
+    }
+    _defence_sessions[session_id] = entry
+    return entry
 
 
 def _ensure_initial_candidates():
     """Populate candidate pool with verified demo briefs."""
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        try:
+            for entry in _blob_client().query_blobs(prefix="sabi/briefs/"):
+                if not getattr(entry, "pathname", "").endswith(".json"):
+                    continue
+                try:
+                    brief = EvidenceBrief(**json.loads(_blob_get_bytes(entry.pathname)))
+                    _briefs[brief.brief_id] = brief
+                except Exception:
+                    continue
+        except Exception as exc:
+            print(f"Blob brief lookup unavailable: {type(exc).__name__}")
     if os.path.isdir(BRIEFS_DIR):
         for fname in os.listdir(BRIEFS_DIR):
             if fname.endswith(".json"):
@@ -137,11 +262,7 @@ def _ensure_initial_candidates():
         scen2 = {"name": "Day One Landed-Cost", "version": "0.1", "seed": 42}
         b2 = build_brief(scores, defence, cand2, scen2)
         _briefs[b2.brief_id] = b2
-        try:
-            with open(os.path.join(BRIEFS_DIR, f"{b2.brief_id}.json"), "w", encoding="utf-8") as f:
-                f.write(b2.model_dump_json(indent=2))
-        except Exception:
-            pass
+        _save_brief(b2)
 
 
 def _ensure_sample_voice_notes():
@@ -535,6 +656,7 @@ def defence_start(req: DefenceStartRequest):
         "student_name": req.student_name or req.student_id,
         "student_email": req.student_email,
     }
+    _persist_defence_session(session_id, _defence_sessions[session_id])
 
     return {
         "session_id": session_id,
@@ -548,7 +670,7 @@ def defence_start(req: DefenceStartRequest):
 @app.post("/api/dayone/defence/answer")
 def defence_answer(req: DefenceAnswerRequest):
     """Submit a student's answer for a defence question."""
-    entry = _defence_sessions.get(req.session_id)
+    entry = _get_defence_session(req.session_id)
     if not entry:
         raise HTTPException(404, detail="Session not found.")
 
@@ -565,6 +687,7 @@ def defence_answer(req: DefenceAnswerRequest):
         )
 
     response = engine.process_answer(session, req.question_index, req.answer)
+    _persist_defence_session(req.session_id, entry)
 
     result = {
         "question_index": response.question_index,
@@ -599,11 +722,7 @@ def defence_answer(req: DefenceAnswerRequest):
         brief = build_brief(scores, defence, candidate, scenario_info)
         _briefs[brief.brief_id] = brief
 
-        try:
-            with open(os.path.join(BRIEFS_DIR, f"{brief.brief_id}.json"), "w", encoding="utf-8") as f:
-                f.write(brief.model_dump_json(indent=2))
-        except Exception:
-            pass
+        _save_brief(brief)
 
         if entry.get("student_email"):
             contacts = [c for c in _load_json_list(CANDIDATE_CONTACTS_FILE) if c.get("brief_id") != brief.brief_id]
@@ -652,10 +771,8 @@ def verify_page(brief_id: str, blind: bool = True):
     """Public, tamper-evident verification page for an Evidence Brief."""
     brief = _briefs.get(brief_id)
     if not brief:
-        json_path = os.path.join(BRIEFS_DIR, f"{brief_id}.json")
-        if os.path.isfile(json_path):
-            data = json.load(open(json_path, encoding="utf-8"))
-            brief = EvidenceBrief(**data)
+        brief = _load_brief(brief_id)
+        if brief:
             _briefs[brief_id] = brief
         else:
             raise HTTPException(404, detail="Brief not found.")
@@ -695,10 +812,8 @@ def create_contact_request(req: ContactRequestCreate):
     """Let an employer request an introduction without exposing candidate contact details."""
     brief = _briefs.get(req.brief_id)
     if not brief:
-        json_path = os.path.join(BRIEFS_DIR, f"{req.brief_id}.json")
-        if os.path.isfile(json_path):
-            with open(json_path, encoding="utf-8") as f:
-                brief = EvidenceBrief(**json.load(f))
+        brief = _load_brief(req.brief_id)
+        if brief:
             _briefs[brief.brief_id] = brief
     if not brief:
         raise HTTPException(404, detail="Candidate result not found.")
@@ -1040,7 +1155,7 @@ def _seed_demo_candidate_contacts() -> None:
 
 _seed_demo_candidate_contacts()
 
-EMPLOYER_TASKS_FILE = os.path.join(BASE_DIR, "employer_tasks.json")
+EMPLOYER_TASKS_FILE = os.path.join(DATA_DIR, "employer_tasks.json")
 
 DEFAULT_EMPLOYER_TASKS: List[Dict[str, Any]] = [
     {
@@ -1106,6 +1221,14 @@ DEFAULT_EMPLOYER_TASKS: List[Dict[str, Any]] = [
 ]
 
 def load_employer_tasks() -> List[Dict[str, Any]]:
+    if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        blob_path = f"sabi/records/{os.path.basename(EMPLOYER_TASKS_FILE)}"
+        try:
+            tasks = json.loads(_blob_get_bytes(blob_path))
+            return tasks if isinstance(tasks, list) else []
+        except Exception as exc:
+            if not _is_blob_not_found(exc):
+                raise
     if os.path.isfile(EMPLOYER_TASKS_FILE):
         try:
             with open(EMPLOYER_TASKS_FILE, "r", encoding="utf-8") as f:
@@ -1118,6 +1241,12 @@ def load_employer_tasks() -> List[Dict[str, Any]]:
 
 def save_employer_tasks(tasks: List[Dict[str, Any]]) -> None:
     try:
+        if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+            _blob_put_bytes(
+                f"sabi/records/{os.path.basename(EMPLOYER_TASKS_FILE)}",
+                json.dumps(tasks, indent=2, ensure_ascii=False).encode("utf-8"),
+                "application/json",
+            )
         with open(EMPLOYER_TASKS_FILE, "w", encoding="utf-8") as f:
             json.dump(tasks, f, indent=2, ensure_ascii=False)
     except Exception as e:

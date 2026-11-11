@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+jinja2
+python-multipart
+openpyxl
+pulp[cbc]
+qrcode[pil]
+groq
+vercel

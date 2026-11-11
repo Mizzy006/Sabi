@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm --prefix frontend ci && npm --prefix frontend run build",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "static/**,templates/**,evidence_brief_demo/**,pack_seed_1/**,dayone_landed_cost_*.xlsx,dayone_landed_cost_key_seed1.json"
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
+}
