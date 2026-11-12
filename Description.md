@@ -1,6 +1,6 @@
 # Sabi: Product Blueprint
 
-*Working title · v0.2 · University-to-Work Gap hackathon · 3 November 2026*
+*Working title · v0.2 · University-to-Work Gap hackathon ·*
 
 ## 1. The concept
 
