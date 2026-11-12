@@ -6,7 +6,7 @@ Sabi helps graduates practise job-related tasks and show evidence of what they c
 
 “Sabi” means “to know” or “to be skilled” in Nigerian Pidgin. Sabi is a prototype built around one idea: a work sample and an explanation of it can tell an employer more than a CV alone.
 
-> **Project status:** This is a working demonstration, not a production hiring or identity-verification service. This README describes what the current app supports; the longer-term concept is in [Description.md](Description.md).
+> **Project status:** This is a working demonstration, not a production hiring or identity-verification service. This README describes what the current app supports; [Description.md](Description.md) provides a fuller project overview.
 
 ## Try the live demo
 
@@ -152,4 +152,4 @@ The interactive API reference is at `/docs`. Main route groups include:
 
 Sabi is a demonstration project, not a production hiring or identity-verification service. The current sign-in flow is for demo use and is not production-grade authentication. Do not use it to protect sensitive accounts or submit confidential personal or business information. Review SME briefs before publishing and use sample data for demonstrations.
 
-For the longer-term product concept and roadmap, see [Description.md](Description.md).
+For a fuller project description, see [Description.md](Description.md).
