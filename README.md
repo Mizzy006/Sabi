@@ -69,6 +69,8 @@ The standard workspace is built with React. A **Data saver** option switches to 
 
 ## Run locally
 
+For detailed platform-specific setup and Render deployment instructions, see [INSTALLATION.md](INSTALLATION.md).
+
 ### Requirements
 
 - Python 3.10 or newer
