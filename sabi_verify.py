@@ -14,9 +14,11 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
+from html import escape
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -84,6 +86,8 @@ class EvidenceBrief(BaseModel):
     scenario_name: str
     scenario_version: str
     instance_seed_hash: str
+    task_id: Optional[str] = None
+    task_title: Optional[str] = None
     # Integrity
     created_at: datetime
     sha256_digest: str = ""
@@ -104,6 +108,78 @@ _DEFAULT_LIMITATIONS = (
     "'Working'. A 'Strong' rating always needs a separate human review. "
     "These checks make dishonest work harder to pass, but they cannot prevent all cheating."
 )
+
+_ROLE_SKILLS = {
+    "graduate_supply_chain_analyst": [
+        ("LC-MODEL-01", "Landed-Cost Modelling"),
+        ("EXCEL-STRUCT-01", "Spreadsheet Structure & Hygiene"),
+    ],
+    "junior_data_analyst": [
+        ("CUSTOMER-RETENTION", "Customer Retention Analytics"),
+        ("UNIT-ECONOMICS", "Unit Economics Modelling"),
+        ("EXCEL-STRUCT-01", "Spreadsheet Structure & Hygiene"),
+    ],
+    "operations_associate": [
+        ("FLEET-OPS", "Fleet Operations Modelling"),
+        ("ROUTE-MARGINS", "Route & Contribution Margin Analysis"),
+        ("EXCEL-STRUCT-01", "Spreadsheet Structure & Hygiene"),
+    ],
+    "financial_modelling_intern": [
+        ("CASHFLOW-MODEL", "Cashflow Forecasting"),
+        ("WORKING-CAPITAL", "Working Capital Analysis"),
+        ("EXCEL-STRUCT-01", "Spreadsheet Structure & Hygiene"),
+    ],
+}
+
+_SKILL_LABELS = {
+    "EXCEL_MODELLING": "Excel Modelling",
+    "VIZ_BASIC": "Data Visualisation",
+    "REPORT_WRITING": "Report Writing",
+    "DATA_CLEANING": "Data Cleaning",
+    "LTV/CAC_MODELLING": "LTV/CAC Modelling",
+    "FX_SENSITIVITY": "FX Sensitivity Analysis",
+}
+
+
+def _role_skill_fallback(scenario_meta: dict) -> list[tuple[str, str]]:
+    role_id = scenario_meta.get("role_id")
+    if not role_id:
+        scenario_name = str(scenario_meta.get("name", "")).casefold()
+        role_markers = (
+            ("landed-cost", "graduate_supply_chain_analyst"),
+            ("apapa", "graduate_supply_chain_analyst"),
+            ("retention", "junior_data_analyst"),
+            ("unit economics", "junior_data_analyst"),
+            ("haulage", "operations_associate"),
+            ("fleet", "operations_associate"),
+            ("cashflow", "financial_modelling_intern"),
+            ("working capital", "financial_modelling_intern"),
+        )
+        role_id = next((candidate for marker, candidate in role_markers if marker in scenario_name), None)
+    return _ROLE_SKILLS.get(role_id, [("TASK-PERFORMANCE", "Task Performance")])
+
+
+def _skill_claim_specs(scenario_meta: dict) -> list[tuple[str, str]]:
+    """Use the active task's declared skills, falling back to the role scenario."""
+    tags = scenario_meta.get("skill_tags") or []
+    if isinstance(tags, str):
+        tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+    if not tags:
+        return _role_skill_fallback(scenario_meta)
+
+    claims = []
+    seen = set()
+    for tag in tags:
+        raw = str(tag).strip()
+        if not raw:
+            continue
+        normalized = raw.upper().replace(" ", "_")
+        skill_id = re.sub(r"[^A-Z0-9]+", "-", normalized).strip("-")
+        skill_name = _SKILL_LABELS.get(normalized, raw.replace("_", " ").strip().title())
+        if skill_id and skill_id not in seen:
+            claims.append((skill_id, skill_name))
+            seen.add(skill_id)
+    return claims or _role_skill_fallback(scenario_meta)
 
 
 def _map_skill_level(
@@ -184,32 +260,20 @@ def build_brief(
         defence_outcome, understanding_gate,
     )
 
-    # Build the skill claims for the scenario
     skills = [
         SkillClaim(
-            skill_id="LC-MODEL-01",
-            skill_name="Landed-Cost Modelling",
+            skill_id=skill_id,
+            skill_name=skill_name,
             level=level,
             tier=EvidenceTier.TIER_A,
             evidence_summary=(
-                f"Scenario auto-check: {shocks_responsive}/{shocks_total} shocks responsive, "
-                f"base {'matches' if base_matches_key else 'does not match'} key, "
-                f"constraints {'OK' if constraint_ok else 'violated'}, "
-                f"defence {defence_outcome}."
+                f"Task checks: {shocks_responsive}/{shocks_total} changes handled, "
+                f"base {'matches' if base_matches_key else 'does not match'} the reference, "
+                f"constraints {'met' if constraint_ok else 'not met'}, "
+                f"explanation {defence_outcome}."
             ),
-        ),
-        SkillClaim(
-            skill_id="EXCEL-STRUCT-01",
-            skill_name="Spreadsheet Structure & Hygiene",
-            level=level,
-            tier=EvidenceTier.TIER_A,
-            evidence_summary=(
-                f"Typed numbers: {scores.get('typed_numbers', '?')}, "
-                f"magic constants: {scores.get('magic_constants', '?')}, "
-                f"constant formulas: {scores.get('constant_formulas', '?')}, "
-                f"unused inputs: {scores.get('unused_inputs', '?')}."
-            ),
-        ),
+        )
+        for skill_id, skill_name in _skill_claim_specs(scenario_meta)
     ]
 
     brief_id = uuid.uuid4().hex[:12]
@@ -238,6 +302,8 @@ def build_brief(
         scenario_name=scenario_meta.get("name", "Day One Landed-Cost"),
         scenario_version=scenario_meta.get("version", "0.1"),
         instance_seed_hash=_seed_hash(scenario_meta),
+        task_id=scenario_meta.get("task_id"),
+        task_title=scenario_meta.get("task_title"),
         created_at=datetime.now(timezone.utc),
         limitations_note=_DEFAULT_LIMITATIONS,
     )
@@ -265,7 +331,9 @@ def apply_blind_mode(brief: EvidenceBrief) -> EvidenceBrief:
 
 def _canonical_json(brief: EvidenceBrief) -> str:
     """Serialize to canonical JSON (sorted keys, no digest field)."""
-    data = brief.model_dump(mode="json")
+    # Exclude fields omitted by older stored briefs so adding optional task
+    # metadata does not invalidate their existing signatures.
+    data = brief.model_dump(mode="json", exclude_unset=True)
     data.pop("sha256_digest", None)
     return json.dumps(data, sort_keys=True, ensure_ascii=False, default=str)
 
@@ -415,12 +483,12 @@ def render_brief_html(brief: EvidenceBrief, blind: bool = True) -> str:
     for sc in b.skills:
         skill_rows += (
             f"<tr>"
-            f'<td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;">{sc.skill_name}</td>'
+            f'<td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;">{escape(sc.skill_name)}</td>'
             f'<td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;text-align:center;">{_level_badge(sc.level)}</td>'
             f'<td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;font-size:0.85em;color:#666;">{_tier_label(sc.tier)}</td>'
             f"</tr>"
             f"<tr>"
-            f'<td colspan="3" style="padding:4px 12px 12px;font-size:0.85em;color:#555;">{sc.evidence_summary}</td>'
+            f'<td colspan="3" style="padding:4px 12px 12px;font-size:0.85em;color:#555;">{escape(sc.evidence_summary)}</td>'
             f"</tr>"
         )
 
@@ -530,6 +598,7 @@ def render_brief_html(brief: EvidenceBrief, blind: bool = True) -> str:
         <td style="padding:4px 0;color:#666;">Scenario</td>
         <td style="padding:4px 0;">{b.scenario_name} (v{b.scenario_version})</td>
       </tr>
+      {f'<tr><td style="padding:4px 0;color:#666;">Employer task</td><td style="padding:4px 0;">{escape(b.task_title or "")} <code>{escape(b.task_id or "")}</code></td></tr>' if b.task_id else ''}
       <tr>
         <td style="padding:4px 0;color:#666;">Created</td>
         <td style="padding:4px 0;">{created}</td>

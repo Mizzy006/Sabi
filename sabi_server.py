@@ -179,6 +179,7 @@ def _persist_defence_session(session_id: str, entry: dict) -> None:
         "role": entry.get("role"),
         "scenario": entry.get("scenario"),
         "task_id": entry.get("task_id"),
+        "task": entry.get("task"),
         "student_name": entry.get("student_name"),
         "student_email": entry.get("student_email"),
         "fallback_used": entry["engine"].fallback_used,
@@ -216,6 +217,7 @@ def _get_defence_session(session_id: str) -> Optional[dict]:
         "role": snapshot.get("role"),
         "scenario": snapshot.get("scenario"),
         "task_id": snapshot.get("task_id"),
+        "task": snapshot.get("task"),
         "student_name": snapshot.get("student_name"),
         "student_email": snapshot.get("student_email"),
     }
@@ -617,6 +619,14 @@ def defence_start(req: DefenceStartRequest):
     """Start a defence session for a student in a specific role."""
     from dayone_defence import DefenceEngine, get_provider
 
+    active_task = None
+    if req.task_id:
+        active_task = next((t for t in load_employer_tasks() if t.get("id") == req.task_id), None)
+        if not active_task:
+            raise HTTPException(404, detail="Task not found.")
+        if active_task.get("role_track") != req.role:
+            raise HTTPException(400, detail="This task does not match the selected role.")
+
     pack_dir = os.path.join(PACKS_DIR, f"pack_{req.role}_seed_{req.seed}")
     if not os.path.isdir(pack_dir):
         legacy = os.path.join(PACKS_DIR, f"pack_seed_{req.seed}")
@@ -657,18 +667,13 @@ def defence_start(req: DefenceStartRequest):
     session = engine.build_session(req.student_id, req.seed, wb_path, qs)
 
     session_id = uuid.uuid4().hex[:12]
-    if req.task_id:
-        task = next((t for t in load_employer_tasks() if t.get("id") == req.task_id), None)
-        if not task:
-            raise HTTPException(404, detail="Task not found.")
-        if task.get("role_track") != req.role:
-            raise HTTPException(400, detail="This task does not match the selected role.")
     _defence_sessions[session_id] = {
         "engine": engine,
         "session": session,
         "role": req.role,
         "scenario": scenario,
         "task_id": req.task_id,
+        "task": active_task,
         "student_name": req.student_name or req.student_id,
         "student_email": req.student_email,
     }
@@ -733,7 +738,21 @@ def defence_answer(req: DefenceAnswerRequest):
             "name": session.student_id,
             "target_role": scenario["role_title"],
         }
-        scenario_info = {"name": scenario["name"], "version": "0.1", "seed": session.scenario_seed}
+        task = entry.get("task") or {}
+        if not task and entry.get("task_id"):
+            task = next(
+                (t for t in load_employer_tasks() if t.get("id") == entry["task_id"]),
+                {},
+            )
+        scenario_info = {
+            "name": scenario["name"],
+            "version": "0.1",
+            "seed": session.scenario_seed,
+            "role_id": role,
+            "task_id": entry.get("task_id"),
+            "task_title": task.get("title"),
+            "skill_tags": task.get("skill_tags"),
+        }
 
         brief = build_brief(scores, defence, candidate, scenario_info)
         _briefs[brief.brief_id] = brief
@@ -755,6 +774,9 @@ def defence_answer(req: DefenceAnswerRequest):
             "defence_outcome": brief.signals.defence_outcome,
             "understanding_gate": brief.signals.understanding_gate,
             "skill_level": brief.skills[0].level.value if brief.skills else "Emerging",
+            "task_id": brief.task_id,
+            "task_title": brief.task_title,
+            "scenario_name": brief.scenario_name,
         }
         task_id = entry.get("task_id")
         if task_id:

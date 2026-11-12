@@ -683,6 +683,13 @@ async function renderEvidenceBriefPreview(briefId, verifyUrl, evidenceSummary = 
     if (showPreview) card.scrollIntoView({ behavior: 'smooth' });
 
     document.getElementById('brief-id-display').innerText = briefId;
+    const taskTitle = evidenceSummary.task_title || evidenceSummary.scenario_name || '';
+    const taskRow = document.getElementById('brief-task-row');
+    const taskTitleNode = document.getElementById('brief-task-title');
+    if (taskRow && taskTitleNode) {
+        taskTitleNode.textContent = taskTitle;
+        taskRow.classList.toggle('hidden', !taskTitle);
+    }
     const passed = evidenceSummary.defence_outcome === 'passed' && evidenceSummary.understanding_gate;
     const status = evidenceSummary.defence_outcome || 'unknown';
     const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
