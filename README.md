@@ -1,187 +1,153 @@
-# 🎓 Sabi
+# Sabi
 
-**Show you sabi: verified proof of what a graduate can actually do.**
+**Practical skills, shown through real work.**
 
-Sabi (Pidgin for "to know, to be skilled") turns practice, projects and real tasks into proof of capability that employers can trust and that is hard to fake with AI. Built for cheap Android phones, patchy data and power cuts.
+Sabi helps graduates practise job-related tasks and show evidence of what they can do. Students can choose a career path, get a study plan, try a practical task, and submit their work for review. Employers can share tasks, review completed work, and request an introduction to a candidate.
 
-> **Design principle: Code decides, the LLM narrates.** Truth comes from deterministic code — dataset generators, answer keys, formula-graph auditors, constraint solvers and cryptographic signatures. The LLM handles language only: persona chat, transcripts, brief writing, and classification against a closed label set at temperature 0.
+“Sabi” means “to know” or “to be skilled” in Nigerian Pidgin. Sabi is a prototype built around one idea: a work sample and an explanation of it can tell an employer more than a CV alone.
 
----
+> **Project status:** This is a working demonstration, not a production hiring or identity-verification service. This README describes what the current app supports; the longer-term concept is in [Description.md](Description.md).
 
-## Architecture
+## Try the live demo
 
-```
-Radar (direction) → Planner (path) → Arena & Day One (practice)
-       ↓                                       ↓
-  Curriculum Gap                      Deterministic Autopsy
-   Heatmap                           + Targeted Defence
-       ↓                                       ↓
-  Department View                     Evidence Brief (signed)
-                                              ↓
-                                      Employer View (blind)
-                                      + QR Verification
-```
+Open [Sabi on Render](https://sabi-demo-2way.onrender.com). The free service may sleep while idle, so the first page load can take about a minute. Use sample information for demonstrations; do not upload confidential personal or business data.
 
-### The Capability Ladder
+## What you can do with Sabi
 
-| Stage | Tier | Mechanism | Cap |
-|:------|:-----|:----------|:----|
-| University Education | **Taught** | Radar curriculum mapping | Baseline |
-| Practical Capability | **Tier A** | Day One autopsy + defence | Working (auto-verified) |
-| Workplace Readiness | **Tier B** | Mentor/SME review | Strong |
-| First Job | **Tier C** | Sponsor attestation | Hired |
+### For students
 
----
+- **Choose a target role.** The current demo includes junior data analyst, graduate supply-chain analyst, operations associate, and financial-modelling intern paths.
+- **Plan what to learn.** Set weekly study-time and mobile-data limits to get a role-focused plan.
+- **Compare coursework with role skills.** Share course information for a skills-gap summary and a suggested practice task.
+- **Try employer tasks.** Browse open challenges and practise on a business-style problem.
+- **Build and explain a spreadsheet.** Download a Day One workbook, work through a scenario, submit the file for formula and change checks, and answer questions about how it works.
+- **Review employer introduction requests.** Decide whether to accept or decline before sharing your email address.
 
-## Components
+### For employers and business owners
 
-| File | Purpose | Lines |
-|:-----|:--------|------:|
-| `dayone_generator.py` | Seeded pack generator: starter workbook, reference solution, answer key | 610 |
-| `dayone_recalc.py` | Multi-backend recalculation bridge (Excel COM / LibreOffice, subprocess isolation) | 240 |
-| `dayone_autopsy.py` | Deterministic autopsy: static checks, shock tests, defence questions | 431 |
-| `dayone_defence.py` | Targeted defence engine: formula-graph claim checker, LLM persona | 1120 |
-| `sabi_verify.py` | Evidence Brief: SHA-256 signing, blind mode, QR codes, HTML rendering | 710 |
-| `sabi_planner.py` | Constraint-optimised learning path (PuLP ILP solver) | 350 |
-| `sabi_radar.py` | Employer demand vs curriculum gap analysis & cohort funnel | 340 |
-| `sabi_sme.py` | SME voice-note pipeline: PII detection, masking, brief extraction | 480 |
-| `sabi_server.py` | Unified FastAPI server & SPA backend delivering 4 stakeholder portals | 410 |
-| `templates/index.html` | Modern, responsive, low-bandwidth multi-portal SPA dashboard | 370 |
-| `static/sabi.js` | Client-side reactive interaction controller (zero build steps) | 390 |
-| `static/sabi.css` | Nigerian styling accents, pulse indicators & low-data styles | 75 |
-| `tests.py` | Comprehensive test suite (43/43 passing) | 415 |
+- **Review candidate results.** Search by role or skill, view results in a blind-first format, and open the linked Evidence Brief to check its details.
+- **Share a task.** Describe a business problem by text or voice note, review the extracted project brief, and publish it for candidates.
+- **Review task submissions.** See who completed a task you posted.
+- **Request an introduction.** Send a message to a candidate. Their email stays private unless they accept.
+- **Explore skills insights.** Compare the skills represented in the demo with curriculum coverage and practice results.
 
----
+### For SMEs
 
-## Quick Start
+The task studio accepts a voice note, transcript, or written description and turns it into a structured project brief. With `GROQ_API_KEY` configured, uploaded audio can be transcribed with Whisper and supported language tasks use Groq. Without a key, Sabi uses a supplied transcript or demo fallback rather than transcribing real speech. It attempts to identify and mask common personal details before the brief is shared. Review the output before publishing; automated masking may miss information.
 
-### Prerequisites
+## How Day One checks spreadsheet work
 
-- Python 3.10+
-- Microsoft Excel (Windows) **or** LibreOffice (Linux/Mac) for workbook recalculation
+Day One is Sabi’s spreadsheet practice and review flow:
 
-### Install
+1. Generate or download a role-specific workbook and task brief.
+2. Complete the workbook and respond to a scenario change, such as an exchange-rate movement or a tighter budget.
+3. Upload the `.xlsx` file. The autopsy checks the workbook against the task’s answer key, formula structure, hard-coded values, constraints, and expected changes after the scenario update.
+4. Explain selected formulas to Mrs. Bello. When you make a verifiable claim about a cell or formula, Sabi checks it against the workbook’s formula dependencies.
+5. View an Evidence Brief with the task outcome and a SHA-256 digest. The digest helps reveal whether the brief’s contents were changed after it was created.
 
-```bash
-pip install openpyxl pywin32 pydantic fastapi uvicorn "pulp[cbc]" httpx2 "qrcode[pil]" groq
-```
+The exact checks depend on the scenario and the submitted workbook. A result applies to that task; it does not prove general job readiness or long-term performance.
 
-### Frontend workspace
+## How to interpret results
 
-The standard workspace shell, candidate pipeline, skills diagnostic, open challenges, My Learning, Tasks & SME Studio, and Talent Insights use React. The data-saver mode keeps the lightweight HTML fallback, uses a compact system-font layout, and does not request the React bundle or full-mode fonts. Employer task data loads when its tab opens, and sample voice audio waits for an explicit play action. Switching modes reloads the current route so each mode gets the correct UI and assets. Rebuild the local production assets after changing React components or styles:
+- Automated checks provide **Tier A** evidence and cap the level at **Working**. A **Strong** rating requires a separate human review.
+- Sabi evaluates the submitted work and the candidate’s explanation. It does not determine who authored the file or detect whether AI tools were used.
+- A SHA-256 digest can help identify later changes to an Evidence Brief. It does not independently prove that every claim in the brief is true.
+- Skills insights are based on the project’s current demo data, not a live feed of job listings.
 
-```bash
-cd frontend
-npm ci
-npm run build
-```
+## User interface
 
-The build writes the self-hosted bundle to `static/react/`. Node is needed for frontend development; the running FastAPI app serves the built assets directly.
+The standard workspace is built with React. A **Data saver** option switches to a lighter HTML interface that loads fewer assets. Both modes use the same application and API.
 
-### Generate a Pack & Run the Self-Test
+## Technology
+
+- **Python and FastAPI** power the API and application server.
+- **React and Vite** build the standard workspace; the lighter HTML interface is served as a fallback.
+- **openpyxl and LibreOffice** inspect and recalculate spreadsheet workbooks. The Render Docker image includes LibreOffice.
+- **PuLP and HiGHS** power the constrained study planner.
+- **Groq is optional** for language tasks. Without an API key, Sabi uses a local mock provider; those responses are for demonstration, not production language quality.
+- **Vercel Blob is optional for local use** and used for durable records in the Render demo when `BLOB_READ_WRITE_TOKEN` is configured.
+
+## Run locally
+
+### Requirements
+
+- Python 3.10 or newer
+- Node.js 20 or newer to rebuild the React interface
+- LibreOffice installed and available as `soffice` for spreadsheet recalculation. On Windows, the app can use Microsoft Excel through COM when the required Python COM package is installed.
+
+Install the Python dependencies and build the frontend from the repository root:
 
 ```bash
-# Generate a seed-1 scenario pack (starter + reference + key)
-python dayone_generator.py --seed 1 --out pack_seed_1
-
-# Run the autopsy self-test (reference vs 3 deliberate defect variants)
-python dayone_autopsy.py --pack pack_seed_1 --selftest --json selftest_report.json
+python -m pip install -r requirements.txt
+npm --prefix frontend ci
+npm --prefix frontend run build
 ```
 
-### Run Individual Components
-
-```bash
-# Defence engine demo (mock LLM, no API key needed)
-python dayone_defence.py
-
-# Evidence Brief generation
-python sabi_verify.py
-
-# Planner: 6-week learning path under constraints
-python sabi_planner.py --hours 10 --mb 500 --weeks 6 --replan-mb 200
-
-# Radar: curriculum gap analysis
-python sabi_radar.py --department Economics
-
-# SME voice-note pipeline
-python sabi_sme.py --demo
-```
-
-### Launch the Full Web Application
+Start the app:
 
 ```bash
 python sabi_server.py
-# → http://localhost:8000      (Full interactive SPA dashboard)
-# → http://localhost:8000/docs (Swagger API interactive docs)
 ```
 
-The web dashboard is a mobile-first, low-bandwidth (<150KB) single-page application serving 4 interactive stakeholder portals:
-- 🎓 **Student Portal**: Constraint-based study path planner (PuLP solver), Day One starter pack generator & download, drag-and-drop workbook autopsy with 6 metamorphic shock invariant tests, live Mrs. Bello conversational defence chat, and tamper-evident Evidence Brief card.
-- 💼 **Employer Portal**: Blind-first candidate pipeline (pedigree-stripped: hides name, school, and gender to eliminate hiring bias), verified capability tags, shock survival metrics, and 1-click links to cryptographic proofs.
-- 📡 **Radar Analytics**: Department-level curriculum vs employer demand gap analysis matrix, top skill discrepancies, and leaky cohort capability funnels (Taught → Practiced → Proven).
-- 🏢 **SME Rails**: Voice-note & chat transcript intake from Nigerian business owners, side-by-side Nigerian PII redaction shield (masks phones, BVNs, NINs, emails, addresses, names), and structured micro-project brief extraction.
+Open [http://localhost:8000](http://localhost:8000) for the app or [http://localhost:8000/docs](http://localhost:8000/docs) for the interactive API reference.
 
-### Run Tests
+Set `GROQ_API_KEY` only if you want to use Groq for supported language tasks. For durable storage with Vercel Blob, configure `BLOB_READ_WRITE_TOKEN` in the server environment; never commit secret values to the repository.
+
+### Run the standalone demos
+
+```bash
+python dayone_defence.py
+python sabi_verify.py
+python sabi_planner.py --hours 10 --mb 500 --weeks 6 --replan-mb 200
+python sabi_radar.py --department Economics
+python sabi_sme.py --demo
+```
+
+### Run the tests
 
 ```bash
 python -m pytest tests.py -v
 ```
 
----
+## Deployment notes
 
-## API Endpoints
+The repository includes a Render Blueprint and Dockerfile for the complete Python app and spreadsheet workflow. The Docker image builds the React assets and installs LibreOffice. For durable records on Render, set `BLOB_READ_WRITE_TOKEN` in the Render service’s environment; the free service’s local filesystem is temporary and the service may sleep when idle.
 
-| Method | Path | Description |
-|:-------|:-----|:------------|
-| `GET` | `/` | Interactive multi-portal dashboard SPA |
-| `GET` | `/verify/{brief_id}` | Public tamper-evident verification page |
-| `POST` | `/api/dayone/pack/generate` | Generate a starter workbook pack |
-| `GET` | `/api/dayone/pack/{seed}/download` | One-click download starter pack (.xlsx) |
-| `POST` | `/api/dayone/submit` | Upload .xlsx, run full metamorphic autopsy |
-| `POST` | `/api/dayone/submit/demo` | Run autopsy directly on reference pack (1-click demo) |
-| `POST` | `/api/dayone/defence/start` | Start targeted defence session with Mrs. Bello |
-| `POST` | `/api/dayone/defence/answer` | Submit defence explanation (formula-graph verified) |
-| `POST` | `/api/planner/solve` | Optimise a learning plan under hours/MB constraints |
-| `GET` | `/api/radar/heatmap` | Curriculum gap analysis & cohort capability funnels |
-| `POST` | `/api/sme/process` | Mask Nigerian PII & extract structured SME brief |
-| `GET` | `/api/candidates` | Candidate pipeline pool (blind or unblinded view) |
+The repository also has Vercel configuration. The current full spreadsheet workflow is intended to run on the Render Docker service because it needs LibreOffice. The deployed Vercel project is a separate deployment and may have access protection enabled.
 
----
+## Project structure
 
-## Day One: How It Works
+| Path | Purpose |
+| --- | --- |
+| `sabi_server.py` | FastAPI app, portal APIs, task flows, and file/record storage |
+| `dayone_generator.py` | Creates role-specific workbook packs, reference files, and answer keys |
+| `dayone_recalc.py` | Recalculates workbooks with Excel COM or LibreOffice |
+| `dayone_autopsy.py` | Checks submitted workbooks and generates defence questions |
+| `dayone_defence.py` | Mrs. Bello question flow and formula-claim verification |
+| `sabi_verify.py` | Creates and renders Evidence Briefs and verification pages |
+| `sabi_planner.py` | Optimises study plans within time and data limits |
+| `sabi_radar.py` | Produces skills and curriculum insights from the available data |
+| `sabi_sme.py` | Processes SME voice notes and extracts task briefs |
+| `frontend/` | React workspace components and Vite build configuration |
+| `templates/` and `static/` | HTML interface, styles, scripts, and built React assets |
+| `render.yaml` and `Dockerfile` | Render deployment configuration |
 
-1. **Chaos Sprint.** Student downloads a ~2 MB offline pack (messy dataset + brief). Mid-task, a shock arrives (FX devaluation, budget cut). The student adapts and resubmits.
+## API overview
 
-2. **Deterministic Autopsy.** Code inspects the file before any LLM:
-   - Typed numbers where formulas belong
-   - Magic constants hardcoded inside formulas
-   - Shock response: outputs must move when inputs change
-   - Metamorphic invariants: direction, locality, constraint compliance
+The interactive API reference is at `/docs`. Main route groups include:
 
-3. **Targeted Defence.** A skeptical CFO persona asks 3 questions generated from the autopsy findings. Claims like "N6 depends on FX_USD_NGN" are verified against the formula graph by code.
+| Route | Purpose |
+| --- | --- |
+| `/api/scenarios` | List available role scenarios |
+| `/api/planner/solve` and `/api/student/curriculum-gap` | Create a study plan or coursework comparison |
+| `/api/dayone/*` | Generate packs, submit workbook work, and run a defence |
+| `/api/employer/tasks` and `/api/employer/managed-tasks` | Browse tasks and review an employer’s tasks and submissions |
+| `/api/candidates`, `/api/contact-requests`, `/api/student/contact-requests/*`, and `/api/employer/contact-requests` | Review candidate results and manage introduction requests |
+| `/api/radar/heatmap` and `/api/sme/*` | Load skills insights and process SME task descriptions |
+| `/verify/{brief_id}` | View an Evidence Brief verification page |
 
-4. **Evidence Brief.** Signed with SHA-256, blind mode by default. Employers scan a QR code to verify.
+## Prototype and privacy note
 
----
+Sabi is a demonstration project, not a production hiring or identity-verification service. The current sign-in flow is for demo use and is not production-grade authentication. Do not use it to protect sensitive accounts or submit confidential personal or business information. Review SME briefs before publishing and use sample data for demonstrations.
 
-## Honest Framing
-
-- This is **not unfakeable**. It raises the cost of faking until honest practice is the cheapest route.
-- Tier A (auto-verified) is **capped at "Working"**. "Strong" always requires a human (Tier B+).
-- AI use is **allowed and disclosed**. The engine tests the artifact and the person, whoever built the file.
-- **Automated Excel grading is not new** ([Frost et al. 2018](https://aisel.aisnet.org/siged2018/6)). What Day One adds: shocks the student must survive, a defence driven by the findings, and employer-facing evidence.
-
----
-
-## Prior Art
-
-- [Frost, Kenyo and Matta (2018)](https://aisel.aisnet.org/siged2018/6) — Automated grading in Excel
-- [University of Pretoria case study](https://zenodo.org/records/11658240/files/paper_4883.pdf) — Limitations of publisher grading tools
-- [Pearson MyLab IT NextGen](https://www.pearson.com/en-us/higher-education/products-services/mylab/it.html) — Per-student variation in live Office 365
-
----
-
-## License
-
-Hackathon project — all rights reserved. Contact for collaboration.
-
+For the longer-term product concept and roadmap, see [Description.md](Description.md).
