@@ -10,7 +10,7 @@ Sabi helps graduates practise job-related tasks and show evidence of what they c
 
 ## Try the live demo
 
-Open [Sabi on Render](https://sabi-demo-2way.onrender.com). The free service may sleep while idle, so the first page load can take about a minute. Use sample information for demonstrations; do not upload confidential personal or business data.
+Open [Sabi on Render](https://sabi-demo-2wav.onrender.com). The free service may sleep while idle, so the first page load can take about a minute. Use sample information for demonstrations; do not upload confidential personal or business data.
 
 ## What you can do with Sabi
 

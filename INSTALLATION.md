@@ -4,7 +4,10 @@ This guide covers running Sabi locally and using the hosted demo. You do not nee
 
 ## Try the hosted demo
 
-Open [Sabi on Render](https://sabi-demo-2way.onrender.com). The free service may sleep while idle; allow about a minute for the first page load after it wakes.
+Open [Sabi on Render](https://sabi-demo-2wav.onrender.com). The free service may sleep while idle; allow about a minute for the first page load after it wakes.
+
+- Live demo: [https://sabi-demo-2wav.onrender.com/](https://sabi-demo-2wav.onrender.com/)
+- API documentation: [https://sabi-demo-2wav.onrender.com/docs](https://sabi-demo-2wav.onrender.com/docs)
 
 ## Run Sabi locally
 
