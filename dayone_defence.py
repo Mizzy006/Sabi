@@ -447,13 +447,15 @@ class MockProvider(LLMProvider):
 
     def _mock_persona_question(self, user: str) -> dict:
         """Generate a mock Mrs. Bello question."""
-        return {
-            "persona_question": (
-                "Ah-ah, tell me something. " + 
-                user.split("question:")[-1].strip()[:200] if "question:" in user.lower()
-                else f"I'm looking at your workbook now. {user[:150]}... Explain this to me."
-            )
-        }
+        # Keep only the source question. The rest of the prompt contains
+        # implementation instructions that should never appear in the UI.
+        match = re.search(
+            r"Original question:\s*(.*?)(?=\n\s*Respond as JSON:|\Z)",
+            user,
+            re.IGNORECASE | re.DOTALL,
+        )
+        question = match.group(1).strip() if match else ""
+        return {"persona_question": question or "Please explain how your workbook works."}
 
     def _mock_extract_claims(self, user: str) -> dict:
         """Extract mock claims from student text."""
@@ -739,7 +741,24 @@ class DefenceEngine:
                 {"role": "user", "content": prompt},
             ]
         )
-        return result.get("persona_question", question.question_text)
+        spoken_question = result.get("persona_question", question.question_text)
+        if not isinstance(spoken_question, str):
+            return question.question_text
+
+        # Defensively remove leaked prompt-format instructions from model
+        # output before it is returned to the candidate-facing UI.
+        spoken_question = re.split(
+            r"\n\s*Respond as JSON\s*:", spoken_question,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0].strip()
+        if not spoken_question or re.search(
+            r"\b(?:Original question|Finding code|persona_question)\s*:",
+            spoken_question,
+            re.IGNORECASE,
+        ):
+            return question.question_text
+        return spoken_question
 
     def _extract_claims(self, question: DefenceQuestion, student_answer: str) -> list[str]:
         """Use the LLM to extract verifiable claims from the student's answer."""
