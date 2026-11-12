@@ -33,7 +33,7 @@
     </script>
     <link rel="stylesheet" href="/static/sabi.css?v=5.0">
     <link rel="stylesheet" href="/static/tailwind.css?v=5.0">
-    <link rel="stylesheet" href="/static/sabi-redesign.css?v=4.0">
+    <link rel="stylesheet" href="/static/sabi-redesign.css?v=5.0">
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
@@ -1381,12 +1381,12 @@
             const reactStyles = document.createElement('link');
             reactStyles.id = 'react-workspace-styles';
             reactStyles.rel = 'stylesheet';
-            reactStyles.href = '/static/react/app.css?v=9.0';
+            reactStyles.href = '/static/react/app.css?v=10.0';
             document.head.appendChild(reactStyles);
             const reactBundle = document.createElement('script');
             reactBundle.id = 'react-workspace-bundle';
             reactBundle.type = 'module';
-            reactBundle.src = '/static/react/app.js?v=9.0';
+            reactBundle.src = '/static/react/app.js?v=10.0';
             document.body.appendChild(reactBundle);
         };
         if (document.documentElement.dataset.mode === 'full') window.loadReactWorkspace();

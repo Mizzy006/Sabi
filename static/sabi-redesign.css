@@ -100,7 +100,7 @@
 :root[data-mode="full"] #view-auth input.field { min-height: 46px; }
 
 /* Product workspace: the portal tabs become a persistent side rail on desktop. */
-@media (min-width: 980px) {
+@media (min-width: 1120px) {
     :root[data-mode="full"] #view-app:not(.hidden) { min-height: 100vh; }
     :root[data-mode="full"] #view-app > .site-header {
         position: fixed;
@@ -297,7 +297,7 @@
 :root[data-mode="full"] .field { min-height: 42px; border-color: #d9e1db; }
 :root[data-mode="full"] .status-dot { box-shadow: 0 0 0 4px #e8f5ed; }
 
-@media (max-width: 979px) {
+@media (max-width: 1119px) {
     :root[data-mode="full"] #view-app > .site-header { position: sticky; top: 0; }
     :root[data-mode="full"] #view-app > .site-header > .max-w-7xl { padding-inline: 18px; }
     :root[data-mode="full"] #view-app .site-header .tabs { margin-inline: -2px; }
@@ -323,4 +323,25 @@
         animation-duration: .01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+@media (min-width: 980px) and (max-width: 1119px) {
+    :root[data-mode="full"] #view-app > main { padding-inline: 24px; }
+    :root[data-mode="full"] #view-app > main .lg\:grid-cols-12 > * { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+    :root[data-mode="full"] #view-app > main .lg\:grid-cols-12 > * { grid-column: 1 / -1; }
+    :root[data-mode="full"] #view-app > main :where(input, select, textarea, button) { max-width: 100%; }
+    :root[data-mode="full"] .lp-nav-row { height: auto; min-height: 60px; gap: 10px; }
+    :root[data-mode="full"] .lp-nav nav { gap: 10px; font-size: 12px; }
+}
+
+@media (max-width: 420px) {
+    :root[data-mode="full"] #view-app > main { padding-inline: 11px; }
+    :root[data-mode="full"] #view-app > main .panel { padding: 15px; }
+    :root[data-mode="full"] .lp-wrap { padding-inline: 15px; }
+    :root[data-mode="full"] .lp-nav-row { align-items: flex-start; flex-direction: column; padding-block: 12px; }
+    :root[data-mode="full"] .lp-nav nav { width: 100%; justify-content: space-between; }
+    :root[data-mode="full"] .lp-title { font-size: clamp(2.25rem, 12vw, 3rem); }
 }
